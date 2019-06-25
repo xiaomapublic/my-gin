@@ -1,0 +1,30 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "{{.Description}}",
+        "title": "{{.Title}}",
+        "contact": {},
+        "license": {},
+        "version": "{{.Version}}"
+    },
+    "host": "{{.Host}}",
+    "basePath": "{{.BasePath}}",
+    "paths": {
+        "/user/index": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "接口测试",
+                "responses": {
+                    "200": {
+                        "description": "{\"code\":0,\"msg\":\"GO GO GO!\"}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

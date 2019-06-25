@@ -1,0 +1,20 @@
+basePath: '{{.BasePath}}'
+host: '{{.Host}}'
+info:
+  contact: {}
+  description: '{{.Description}}'
+  license: {}
+  title: '{{.Title}}'
+  version: '{{.Version}}'
+paths:
+  /user/index:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"code":0,"msg":"GO GO GO!"}'
+          schema:
+            type: string
+      summary: 接口测试
+swagger: "2.0"

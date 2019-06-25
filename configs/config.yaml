@@ -1,0 +1,50 @@
+# system
+mode: "debug"
+
+server_port: ":8181"
+
+app_name: "my_gin"
+
+log:
+  path: "/logs/my-gin/"
+  max_size: 128
+  max_backups: 30
+  max_age: 7
+  compress: true
+
+mysql:
+  my_gin:
+    host: "10.0.4.31"
+    user: "root"
+    passwd: "123456"
+    port: "33066"
+    maxidleconns: 0
+    maxopenconns: 20 # 最大空闲连接数
+
+redis:
+  default:
+    -
+      addr: "10.0.4.31:6379"
+      pwd: "123456"
+      instance: "master"
+      max_idle: 0
+      max_active: 20
+    -
+      addr: "10.0.4.31:6379"
+      pwd: "123456"
+      instance: "slave"
+      max_idle: 0
+      max_active: 20
+
+mongodb:
+  default:
+    addr:
+      - "192.168.5.251:28019"
+      - "192.168.5.251:28019"
+      - "192.168.5.251:28019"
+    user: "user"
+    pwd: "123456"
+    instance: "master"
+    max_active: 20
+
+
