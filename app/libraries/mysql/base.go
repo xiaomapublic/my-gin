@@ -26,7 +26,7 @@ type base interface {
 // Base 为数据库核心model，其他model均内嵌此model。
 type Base struct {
 	base
-	Id uint32 `gorm:"primary_key" json:"id"`
+	Id         uint32    `gorm:"primary_key" json:"id"`
 	Created_at time.Time `json:"created_at"`
 	Updated_at time.Time `json:"Updated_at"`
 }
@@ -42,15 +42,15 @@ func NewDB() {
 	for dbName, dbConfigs := range dbConfig {
 		//类型断言，将interface类型转换为map类型
 		dbConfigs, ok := dbConfigs.(map[string]interface{})
-		if (ok != true) {
+		if ok != true {
 			log.InitLog("mysql").Errorf("NewDB", "msg", "获取数据库配置失败")
 			fmt.Println("获取数据库配置失败")
 			return
 		}
 
 		//打开数据库连接
-		orm, err = gorm.Open("mysql", dbConfigs["user"].(string) + ":" + dbConfigs["passwd"].(string) + "@tcp(" + dbConfigs["host"].(string) + ":" + dbConfigs["port"].(string) + ")/" + dbName + "?charset=utf8&parseTime=True&loc=Local")
-		if (err != nil) {
+		orm, err = gorm.Open("mysql", dbConfigs["user"].(string)+":"+dbConfigs["passwd"].(string)+"@tcp("+dbConfigs["host"].(string)+":"+dbConfigs["port"].(string)+")/"+dbName+"?charset=utf8&parseTime=True&loc=Local")
+		if err != nil {
 			log.InitLog("mysql").Errorf("NewDB", "msg", err.Error())
 			fmt.Println("数据库连接失败")
 			return
@@ -62,6 +62,8 @@ func NewDB() {
 		orm.DB().SetMaxIdleConns(dbConfigs["maxidleconns"].(int))
 		//设置最大连接数
 		orm.DB().SetMaxOpenConns(dbConfigs["maxopenconns"].(int))
+		//设置每个连接的过期时间
+		orm.DB().SetConnMaxLifetime(time.Second * 5)
 
 		Gorm[dbName] = orm
 
