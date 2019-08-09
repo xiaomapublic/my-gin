@@ -7,19 +7,24 @@ import (
 )
 
 type MyGinData struct {
-	Id               string         		`bson:"_id"`
-	Name             string                 `bson:"name"`
-	Location_id      int                    `bson:"location_id"`
-	Product_id       int                    `bson:"product_id"`
-	Advertiser_id    int                    `bson:"advertiser_id"`
-	Creative_type_id int                    `bson:"creative_type_id"`
-	Created_at       time.Time             	`bson:"created_at"`
+	Id                 string    `json:"id" bson:"_id"`
+	Hour               string    `json:"hour"`
+	Ad_id              string    `json:"ad_id"`
+	Campaign_id        string    `json:"campaign_id"`
+	Product_id         int       `json:"product_id"`
+	Advertiser_id      int       `json:"advertiser_id"`
+	Request_count      int       `json:"request_count"`
+	Cpm_count          int       `json:"cpm_count"`
+	Cpc_original_count int       `json:"cpc_original_count"`
+	Division_id        int       `json:"division_id"`
+	Status             int       `json:"status"`
+	Created_at         time.Time `json:"created_at"`
+	Updated_at         time.Time `json:"updated_at"`
 }
 
 type MyGin struct {
-
 }
 
 func (*MyGin) Mongodb() *mgo.Collection {
-	return mongodb.MongoSession["default"].C("my_gin")
+	return mongodb.MongoSession["mygin"].C("mygin")
 }

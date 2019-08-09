@@ -4,6 +4,7 @@ package cronjobs
 import (
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize"
+	"my-gin/app/libraries/config"
 	"my-gin/app/libraries/log"
 	"time"
 )
@@ -18,10 +19,13 @@ func Spider() {
 
 	f.SetActiveSheet(index)
 
-	err := f.SaveAs("./static/excel/" + nowTime.Format("2006-01-02") + ".xlsx")
+	config.DefaultConfigInit()
+	path := config.DefaultConfig.GetString("excel")
+
+	err := f.SaveAs(path + nowTime.Format("2006-01-02") + ".xlsx")
 
 	if err != nil {
 		fmt.Println(err)
-		log.InitLog("spider").Error("创建excel错误")
+		log.InitLog("spider").Errorf("创建excel错误", err.Error())
 	}
 }

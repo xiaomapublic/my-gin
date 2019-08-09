@@ -11,16 +11,16 @@ import (
 )
 
 func InitLog(logName string) *zap.SugaredLogger {
-	config.DefaultConfigInit()
-	logConfigs := config.DefaultConfig.GetStringMap("log")
+	//config.DefaultConfigInit()
+	logConfigs := config.UnmarshalConfig.Log
 
 	hook := lumberjack.Logger{
 
-		Filename:   logConfigs["path"].(string) + time.Now().Format("2006-01-02") + "/" + logName + ".log", // 日志文件路径
-		MaxSize:    logConfigs["max_size"].(int),                                                           // 每个日志文件保存的最大尺寸 单位：M
-		MaxBackups: logConfigs["max_backups"].(int),                                                        // 日志文件最多保存多少个备份
-		MaxAge:     logConfigs["max_age"].(int),                                                            // 文件最多保存多少天
-		Compress:   logConfigs["compress"].(bool),                                                          // 是否压缩
+		Filename:   logConfigs.Path + time.Now().Format("2006-01-02") + "/" + logName + ".log", // 日志文件路径
+		MaxSize:    logConfigs.Max_size,                                                        // 每个日志文件保存的最大尺寸 单位：M
+		MaxBackups: logConfigs.Max_backups,                                                     // 日志文件最多保存多少个备份
+		MaxAge:     logConfigs.Max_age,                                                         // 文件最多保存多少天
+		Compress:   logConfigs.Compress,                                                        // 是否压缩
 	}
 
 	encoderConfig := zapcore.EncoderConfig{

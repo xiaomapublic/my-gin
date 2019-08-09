@@ -22,6 +22,7 @@ func main() {
 
 func runTask() {
 	c := cron.New()
-	c.AddFunc("5 7 * * * *", Spider)
+	//c.AddFunc("5 7 * * * *", Spider)
+	//c.AddFunc("15 00 19 * * *", My_gin_script)
 	c.Start()
 }

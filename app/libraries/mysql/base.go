@@ -37,31 +37,24 @@ func NewDB() {
 	var err error
 
 	//viper读出的配置数据会强制将键中的大写转换为小写
-	dbConfig := DefaultConfig.GetStringMap("mysql")
+	dbConfig := UnmarshalConfig.Mysql
 
 	for dbName, dbConfigs := range dbConfig {
-		//类型断言，将interface类型转换为map类型
-		dbConfigs, ok := dbConfigs.(map[string]interface{})
-		if ok != true {
-			log.InitLog("mysql").Errorf("NewDB", "msg", "获取数据库配置失败")
-			fmt.Println("获取数据库配置失败")
-			return
-		}
 
 		//打开数据库连接
-		orm, err = gorm.Open("mysql", dbConfigs["user"].(string)+":"+dbConfigs["passwd"].(string)+"@tcp("+dbConfigs["host"].(string)+":"+dbConfigs["port"].(string)+")/"+dbName+"?charset=utf8&parseTime=True&loc=Local")
+		orm, err = gorm.Open("mysql", dbConfigs.User+":"+dbConfigs.Passwd+"@tcp("+dbConfigs.Host+":"+dbConfigs.Port+")/"+dbName+"?charset=utf8&parseTime=True&loc=Local")
 		if err != nil {
 			log.InitLog("mysql").Errorf("NewDB", "msg", err.Error())
-			fmt.Println("数据库连接失败")
+			fmt.Println(err.Error())
 			return
 		}
 
 		//建表时不将表名自动变更为单词的复数形式
 		orm.SingularTable(true)
 		//设置最大空闲数
-		orm.DB().SetMaxIdleConns(dbConfigs["maxidleconns"].(int))
+		orm.DB().SetMaxIdleConns(dbConfigs.Maxidleconns)
 		//设置最大连接数
-		orm.DB().SetMaxOpenConns(dbConfigs["maxopenconns"].(int))
+		orm.DB().SetMaxOpenConns(dbConfigs.Maxopenconns)
 		//设置每个连接的过期时间
 		orm.DB().SetConnMaxLifetime(time.Second * 5)
 

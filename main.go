@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/DeanThompson/ginpprof"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"my-gin/app/cronjobs"
@@ -11,8 +10,9 @@ import (
 	"my-gin/app/libraries/log"
 	"my-gin/app/libraries/mongodb"
 	"my-gin/app/libraries/mysql"
+	"my-gin/app/libraries/rabbitmq"
 	"my-gin/app/libraries/redis"
-	"my-gin/routers"
+	"my-gin/app/services/test"
 	"net/http"
 	"os"
 	"os/signal"
@@ -32,53 +32,33 @@ func main() {
 	mysql.Init()
 	redis.Init()
 	mongodb.Init()
+	rabbitmq.Init()
 
 	//初始化定时任务
 	cronjobs.Init()
+
+	//初始化队列任务
+	go func() {
+		test.MonitorAdHourMq()
+	}()
 
 	//设置cpu最大执行数量
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	logger.Info("cup核数：", runtime.NumCPU())
 
 	//设置系统模式release为开发模式
-	gin.SetMode(DefaultConfig.GetString("mode"))
+	gin.SetMode(UnmarshalConfig.Mode)
 
 	//获取gin初始化实例
-	router := gin.Default()
-
-	// 性能分析工具
-	ginpprof.Wrap(router)
-
-	router.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code": 404,
-			"msg":  "找不到该路由",
-		}) 
-		return
-	})
-
-	router.NoMethod(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code": 404,
-			"msg":  "找不到该方法",
-		})
-		return
-	})
-
-	routers.RegisterApiRouter(router)
+	router := initRouter()
 
 	//gin默认监听端口方式
-	//if err := router.Run(DefaultConfig.GetString("server_port")); err != nil {
+	//if err := router.Run(UnmarshalConfig.Server_port); err != nil {
 	//	log.Fatalf("listen: %s\n", err)
 	//}
 
-	router.GET("/", func(c *gin.Context) {
-		time.Sleep(5 * time.Second)
-		c.String(http.StatusOK, "Welcome")
-	})
-
 	srv := &http.Server{
-		Addr:    DefaultConfig.GetString("server_port"),
+		Addr:    UnmarshalConfig.Server_port,
 		Handler: router,
 	}
 

@@ -3,14 +3,26 @@ mode: "debug"
 
 server_port: ":8181"
 
-app_name: "my_gin"
+app_name: "my-gin"
+
+template: "static/html"
+
+app_secret: "bl6hukk5vlbv68pthglg"
+
+cookie_name: "mygin_session"
+
+jwt:
+  secret: "mygin_session"
+  alg: "HS256"
 
 log:
-  path: "/logs/my-gin/"
+  path: "/home/my-gin/logs/"
   max_size: 128
   max_backups: 30
   max_age: 7
   compress: true
+
+excel: "/home/my-gin/excel/"
 
 mysql:
   my_gin:
@@ -18,8 +30,8 @@ mysql:
     user: "root"
     passwd: "123456"
     port: "33066"
-    maxidleconns: 0
-    maxopenconns: 20 # 最大空闲连接数
+    maxidleconns: 64 # 设置最大空闲数
+    maxopenconns: 128 # 设置最大连接数
 
 redis:
   default:
@@ -35,16 +47,34 @@ redis:
       instance: "slave"
       max_idle: 0
       max_active: 20
+  session:
+    - addr: "10.0.4.31:6379"
+      pwd: "123456"
+      instance: "master"
+      max_idle: 0
+      max_active: 20
+    - addr: "10.0.4.31:6379"
+      pwd: "123456"
+      instance: "slave"
+      max_idle: 0
+      max_active: 20
 
 mongodb:
-  default:
+  mygin:
     addr:
-      - "192.168.5.251:28019"
-      - "192.168.5.251:28019"
-      - "192.168.5.251:28019"
-    user: "user"
+      - "10.0.4.31:27017"
+      - "10.0.4.31:27017"
+      - "10.0.4.31:27017"
+    user: "mygin"
     pwd: "123456"
     instance: "master"
     max_active: 20
+
+rabbitmq:
+  my_vhost:
+    addr: "10.0.4.31:5672"
+    user: "go"
+    pwd: "123456"
+
 
 

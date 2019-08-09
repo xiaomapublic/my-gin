@@ -3,6 +3,7 @@ package mongodb
 
 import (
 	"fmt"
+	"github.com/rs/xid"
 	"gopkg.in/mgo.v2"
 	. "my-gin/app/libraries/config"
 	"my-gin/app/libraries/log"
@@ -13,21 +14,19 @@ var MongoSession map[string]*mgo.Database
 
 func Init() {
 
-	MongoSession = make(map[string]*mgo.Database, len(DefaultConfig.GetString("mongodb")))
+	MongoSession = make(map[string]*mgo.Database, len(UnmarshalConfig.Mongodb))
 
-	for key, c := range DefaultConfig.GetStringMap("mongodb") {
+	for key, c := range UnmarshalConfig.Mongodb {
+		addrArr := c.Addr
 
-		conOne := c.(map[string]interface{})
-		addr := conOne["addr"].([]interface{})
-
-		addrs := make([]string, len(addr))
-		for _, add := range addr {
-			addrs = append(addrs, add.(string))
+		addrs := make([]string, len(addrArr))
+		for _, add := range addrArr {
+			addrs = append(addrs, add)
 		}
 
-		user := conOne["user"].(string)
-		pwd := conOne["pwd"].(string)
-		max_active := conOne["max_active"].(int)
+		user := c.User
+		pwd := c.Pwd
+		max_active := c.Max_active
 		MongoSession[key] = NewMongodb(addrs, key, user, pwd, max_active)
 	}
 }
@@ -56,4 +55,9 @@ func NewMongodb(addr []string, databaseName, user, pwd string, max_active int) *
 	//但是strong模式和Monotonic模式会缓存socket到session中，导致我拿到的始终是同一个连接，这对并发请求mongo server会损失一定的效率（一个连接在使用过程中会有多次加锁解锁操作）。所以后续为了从连接池拿空闲的连接而不是一直使用同一个连接，会用到copy方法，拿到一个没有缓存连接的session，这样它就会去连接池拿空闲的可用的连接
 	session.SetMode(mgo.Monotonic, true)
 	return session.DB(databaseName)
+}
+
+//创建_id
+func CreateId() string {
+	return xid.New().String()
 }

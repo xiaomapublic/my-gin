@@ -35,10 +35,10 @@ func Init() {
 // NewPool 会返回一个*redis.Pool实例
 func newPool(addr string, pwd string, max_idle int, max_active int) *redis.Pool {
 	return &redis.Pool{
-		MaxIdle:     max_idle,//最大空闲连接数，即会有这么多个连接提前等待着，但过了超时时间也会关闭
-		MaxActive:   max_active,//最大连接数，即最多的tcp连接数，一般建议往大的配置，但不要超过操作系统文件句柄个数（centos下可以ulimit -n查看）
-		IdleTimeout: 20 * time.Second,//空闲连接超时时间，但应该设置比redis服务器超时时间短。否则服务端超时了，客户端保持着连接也没用。
-		Wait:true,//如果超过最大连接，是报错，还是等待。
+		MaxIdle:     max_idle,         //最大空闲连接数，即会有这么多个连接提前等待着，但过了超时时间也会关闭
+		MaxActive:   max_active,       //最大连接数，即最多的tcp连接数，一般建议往大的配置，但不要超过操作系统文件句柄个数（centos下可以ulimit -n查看）
+		IdleTimeout: 20 * time.Second, //空闲连接超时时间，但应该设置比redis服务器超时时间短。否则服务端超时了，客户端保持着连接也没用。
+		Wait:        true,             //如果超过最大连接，是报错，还是等待。
 		Dial: func() (redis.Conn, error) {
 			c, err := redis.Dial(
 				"tcp",
@@ -73,13 +73,13 @@ type RedisInstanceClass struct {
 }
 
 // 通过名称获取redis实例
-func (redis *RedisInstanceClass)GetRedigoByName(redisName string, instance string){
+func (redis *RedisInstanceClass) GetRedigoByName(redisName string, instance string) {
 	redis.redisConnInstance = Redigo[redisName][instance]
 }
 
 // set插入数据
-func (rediss *RedisInstanceClass) Set(key, value string) bool {
-	_ , err := rediss.redisConnInstance.Get().Do("SET", key, value)
+func (rediss *RedisInstanceClass) Set(key string, value interface{}) bool {
+	_, err := rediss.redisConnInstance.Get().Do("SET", key, value)
 	if err != nil {
 		log.InitLog("redis").Errorf("SET", "msg", err)
 		fmt.Println("redis set error")
@@ -89,8 +89,8 @@ func (rediss *RedisInstanceClass) Set(key, value string) bool {
 }
 
 // setex插入数据与过期时间
-func (rediss *RedisInstanceClass) SetEx(key, value string, seconds int) bool {
-	_ , err := rediss.redisConnInstance.Get().Do("SET", key, value, "EX", seconds)
+func (rediss *RedisInstanceClass) SetEx(key string, value interface{}, seconds int) bool {
+	_, err := rediss.redisConnInstance.Get().Do("SET", key, value, "EX", seconds)
 	if err != nil {
 		log.InitLog("redis").Errorf("SETEX", "msg", err)
 		fmt.Println("redis setex error")
@@ -101,7 +101,7 @@ func (rediss *RedisInstanceClass) SetEx(key, value string, seconds int) bool {
 
 // get获取数据
 func (rediss *RedisInstanceClass) Get(key string) string {
-	ret , err := redis.String(rediss.redisConnInstance.Get().Do("GET", key))
+	ret, err := redis.String(rediss.redisConnInstance.Get().Do("GET", key))
 	if err != nil {
 		log.InitLog("redis").Errorf("GET", "msg", err)
 		fmt.Println("redis get error")
@@ -110,8 +110,8 @@ func (rediss *RedisInstanceClass) Get(key string) string {
 }
 
 // del删除数据
-func (rediss *RedisInstanceClass) Del(key string) bool {
-	_ , err := rediss.redisConnInstance.Get().Do("DEL", key)
+func (rediss *RedisInstanceClass) Del(key interface{}) bool {
+	_, err := rediss.redisConnInstance.Get().Do("DEL", key)
 	if err != nil {
 		log.InitLog("redis").Errorf("DEL", "msg", err)
 		fmt.Println("redis del error")
@@ -121,8 +121,8 @@ func (rediss *RedisInstanceClass) Del(key string) bool {
 }
 
 // hset插入数据
-func (rediss *RedisInstanceClass) HSet(key, field, val string) bool {
-	_ , err := rediss.redisConnInstance.Get().Do("HSET", key, field, val)
+func (rediss *RedisInstanceClass) HSet(key string, field, val interface{}) bool {
+	_, err := rediss.redisConnInstance.Get().Do("HSET", key, field, val)
 	if err != nil {
 		log.InitLog("redis").Errorf("HSET", "msg", err)
 		fmt.Println("redis hset error")
@@ -132,8 +132,8 @@ func (rediss *RedisInstanceClass) HSet(key, field, val string) bool {
 }
 
 // hmset插入数据
-func (rediss *RedisInstanceClass) HMSet(key string, val map[string]string) bool {
-	_ , err := rediss.redisConnInstance.Get().Do("HMSET", redis.Args{}.Add(key).AddFlat(val)...)
+func (rediss *RedisInstanceClass) HMSet(key string, val interface{}) bool {
+	_, err := rediss.redisConnInstance.Get().Do("HMSET", redis.Args{}.Add(key).AddFlat(val)...)
 	if err != nil {
 		log.InitLog("redis").Errorf("HMSET", "msg", err)
 		fmt.Println("redis hmset error")
@@ -143,8 +143,8 @@ func (rediss *RedisInstanceClass) HMSet(key string, val map[string]string) bool 
 }
 
 // hget获取数据
-func (rediss *RedisInstanceClass) HGet(key, field string) string {
-	ret , err := redis.String(rediss.redisConnInstance.Get().Do("HGET", key, field))
+func (rediss *RedisInstanceClass) HGet(key, field string) interface{} {
+	ret, err := redis.String(rediss.redisConnInstance.Get().Do("HGET", key, field))
 	if err != nil {
 		log.InitLog("redis").Errorf("HGET", "msg", err)
 		fmt.Println("redis hget error")
@@ -153,12 +153,11 @@ func (rediss *RedisInstanceClass) HGet(key, field string) string {
 }
 
 // hmgetall获取数据
-func (rediss *RedisInstanceClass) HMGetAll(key string) map[string]string {
-	ret , err := redis.StringMap(rediss.redisConnInstance.Get().Do("HGETALL", key))
+func (rediss *RedisInstanceClass) HMGetAll(key string) interface{} {
+	ret, err := redis.StringMap(rediss.redisConnInstance.Get().Do("HGETALL", key))
 	if err != nil {
 		log.InitLog("redis").Errorf("HMGET", "msg", err)
 		fmt.Println("redis hmget error")
 	}
 	return ret
 }
-
