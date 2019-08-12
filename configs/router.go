@@ -6,7 +6,7 @@ import (
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 	"my-gin/app/controllers/test"
 	_ "my-gin/docs"
-	"my-gin/filters/auth"
+	"my-gin/libraries/filters/auth"
 )
 
 var testApi *test.Api

@@ -6,13 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"my-gin/app/cronjobs"
-	. "my-gin/app/libraries/config"
-	"my-gin/app/libraries/log"
-	"my-gin/app/libraries/mongodb"
-	"my-gin/app/libraries/mysql"
-	"my-gin/app/libraries/rabbitmq"
-	"my-gin/app/libraries/redis"
 	"my-gin/app/services/test"
+	. "my-gin/libraries/config"
+	"my-gin/libraries/log"
+	"my-gin/libraries/mongodb"
+	"my-gin/libraries/mysql"
+	"my-gin/libraries/rabbitmq"
+	"my-gin/libraries/redis"
+	routerBase "my-gin/libraries/router"
 	"net/http"
 	"os"
 	"os/signal"
@@ -50,7 +51,7 @@ func main() {
 	gin.SetMode(UnmarshalConfig.Mode)
 
 	//获取gin初始化实例
-	router := initRouter()
+	router := routerBase.InitRouter()
 
 	//gin默认监听端口方式
 	//if err := router.Run(UnmarshalConfig.Server_port); err != nil {

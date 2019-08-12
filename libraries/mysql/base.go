@@ -6,8 +6,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	. "my-gin/app/libraries/config" //  . 操作是省略前面的包名; _ 匿名导入，不适用包内任何方法，但会触发init()方法
-	"my-gin/app/libraries/log"
+	. "my-gin/libraries/config" //  . 操作是省略前面的包名; _ 匿名导入，不适用包内任何方法，但会触发init()方法
+	"my-gin/libraries/log"
 	"time"
 )
 

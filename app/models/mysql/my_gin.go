@@ -2,7 +2,7 @@ package mysql
 
 import (
 	"github.com/jinzhu/gorm"
-	"my-gin/app/libraries/mysql"
+	"my-gin/libraries/mysql"
 	"time"
 )
 

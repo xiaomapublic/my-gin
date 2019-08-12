@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/rs/xid"
 	"gopkg.in/mgo.v2"
-	. "my-gin/app/libraries/config"
-	"my-gin/app/libraries/log"
+	. "my-gin/libraries/config"
+	"my-gin/libraries/log"
 	"time"
 )
 

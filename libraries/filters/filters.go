@@ -5,7 +5,7 @@ import (
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"my-gin/app/libraries/config"
+	"my-gin/libraries/config"
 	"time"
 )
 

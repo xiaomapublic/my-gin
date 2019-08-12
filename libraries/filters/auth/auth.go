@@ -2,7 +2,7 @@ package auth
 
 import (
 	"github.com/gin-gonic/gin"
-	"my-gin/filters/auth/drivers"
+	"my-gin/libraries/filters/auth/drivers"
 	"net/http"
 )
 

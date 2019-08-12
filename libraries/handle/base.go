@@ -1,13 +1,13 @@
-package main
+package handle
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
-	"my-gin/app/libraries/log"
+	"my-gin/libraries/log"
 	"net/http"
 )
 
-func handleErrors() gin.HandlerFunc {
+func HandleErrors() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {

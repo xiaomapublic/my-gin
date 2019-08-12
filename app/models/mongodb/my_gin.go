@@ -2,7 +2,7 @@ package mongodb
 
 import (
 	"gopkg.in/mgo.v2"
-	"my-gin/app/libraries/mongodb"
+	"my-gin/libraries/mongodb"
 	"time"
 )
 

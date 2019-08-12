@@ -4,8 +4,8 @@ package redis
 import (
 	"fmt"
 	"github.com/gomodule/redigo/redis"
-	. "my-gin/app/libraries/config"
-	"my-gin/app/libraries/log"
+	. "my-gin/libraries/config"
+	"my-gin/libraries/log"
 	"time"
 )
 

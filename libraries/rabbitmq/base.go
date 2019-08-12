@@ -3,7 +3,7 @@ package rabbitmq
 import (
 	"fmt"
 	"github.com/streadway/amqp"
-	. "my-gin/app/libraries/config"
+	. "my-gin/libraries/config"
 )
 
 var RabbitSession map[string]*amqp.Channel

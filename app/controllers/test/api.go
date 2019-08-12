@@ -9,14 +9,14 @@ import (
 	"github.com/streadway/amqp"
 	"gopkg.in/mgo.v2/bson"
 	"math/rand"
-	"my-gin/app/libraries/mongodb"
-	"my-gin/app/libraries/mysql"
-	"my-gin/app/libraries/rabbitmq"
-	redisLib "my-gin/app/libraries/redis"
 	mongodbMod "my-gin/app/models/mongodb"
 	mysqlMod "my-gin/app/models/mysql"
 	"my-gin/app/services/test"
-	"my-gin/filters/auth"
+	"my-gin/libraries/filters/auth"
+	"my-gin/libraries/mongodb"
+	"my-gin/libraries/mysql"
+	"my-gin/libraries/rabbitmq"
+	redisLib "my-gin/libraries/redis"
 	"net/http"
 	"strconv"
 	"strings"
@@ -363,9 +363,9 @@ func (*Api) MongodbGetAll(c *gin.Context) {
 func (*Api) MongodbGetWhere(c *gin.Context) {
 	var conn *mongodbMod.MyGin
 	var data []mongodbMod.MyGinData
-	ad_id, _ := c.GetQuery("ad_id")
+	id, _ := c.GetQuery("id")
 
-	err := conn.Mongodb().Find(bson.M{"ad_id": ad_id}).All(&data)
+	err := conn.Mongodb().Find(bson.M{"_id": id}).All(&data)
 	if err != nil {
 		fmt.Println(err.Error())
 	}

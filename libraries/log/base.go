@@ -2,7 +2,7 @@
 package log
 
 import (
-	"my-gin/app/libraries/config"
+	"my-gin/libraries/config"
 	"time"
 
 	"go.uber.org/zap"

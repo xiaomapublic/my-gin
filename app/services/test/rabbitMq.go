@@ -5,11 +5,11 @@ rabbitmq接收服务
 */
 import (
 	"encoding/json"
-	"my-gin/app/libraries/log"
-	mongodb2 "my-gin/app/libraries/mongodb"
-	"my-gin/app/libraries/rabbitmq"
 	"my-gin/app/models/mongodb"
 	"my-gin/app/models/mysql"
+	"my-gin/libraries/log"
+	mongodb2 "my-gin/libraries/mongodb"
+	"my-gin/libraries/rabbitmq"
 	"reflect"
 )
 

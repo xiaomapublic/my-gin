@@ -4,8 +4,9 @@ package cronjobs
 import (
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize"
-	"my-gin/app/libraries/config"
-	"my-gin/app/libraries/log"
+	"my-gin/libraries/config"
+	"my-gin/libraries/log"
+	"os"
 	"time"
 )
 
@@ -22,7 +23,14 @@ func Spider() {
 	config.DefaultConfigInit()
 	path := config.DefaultConfig.GetString("excel")
 
-	err := f.SaveAs(path + nowTime.Format("2006-01-02") + ".xlsx")
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = os.Mkdir(path, os.ModePerm)
+		}
+	}
+
+	err = f.SaveAs(path + nowTime.Format("2006-01-02") + ".xlsx")
 
 	if err != nil {
 		fmt.Println(err)

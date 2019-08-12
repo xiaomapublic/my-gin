@@ -9,10 +9,10 @@ template: "static/html"
 
 app_secret: "bl6hukk5vlbv68pthglg"
 
-cookie_name: "mygin_session"
+cookie_name: "my-gin-session"
 
 jwt:
-  secret: "mygin_session"
+  secret: "my-gin-session"
   alg: "HS256"
 
 log:

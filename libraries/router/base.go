@@ -1,16 +1,17 @@
-package main
+package router
 
 import (
 	"github.com/DeanThompson/ginpprof"
 	"github.com/gin-gonic/gin"
-	"my-gin/app/libraries/config"
-	"my-gin/filters"
-	"my-gin/filters/auth"
-	routeRegister "my-gin/routers"
+	routeRegister "my-gin/configs"
+	"my-gin/libraries/config"
+	"my-gin/libraries/filters"
+	"my-gin/libraries/filters/auth"
+	"my-gin/libraries/handle"
 	"net/http"
 )
 
-func initRouter() *gin.Engine {
+func InitRouter() *gin.Engine {
 	router := gin.New()
 
 	// html模板
@@ -22,7 +23,7 @@ func initRouter() *gin.Engine {
 	router.Use(gin.Logger())
 
 	// 错误处理
-	router.Use(handleErrors())
+	router.Use(handle.HandleErrors())
 	// 全局session
 	router.Use(filters.RegisterSession())
 	// 全局cache

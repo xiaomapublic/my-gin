@@ -3,7 +3,7 @@ package drivers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/sessions"
-	"my-gin/app/libraries/config"
+	"my-gin/libraries/config"
 	"net/http"
 )
 
