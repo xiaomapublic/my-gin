@@ -5,7 +5,6 @@ import (
 	"sync"
 )
 
-
 func Seek(name string, match chan string, wg *sync.WaitGroup) {
 	select {
 	case peer := <-match:
