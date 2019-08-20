@@ -1,4 +1,4 @@
-package test
+package defaultExecution
 
 /**
 rabbitmq接收服务
@@ -13,7 +13,7 @@ import (
 	"reflect"
 )
 
-var data []mysql.My_gin
+var data []mysql.MyGin
 var conn *mongodb.MyGin
 
 func MonitorAdHourMq() {

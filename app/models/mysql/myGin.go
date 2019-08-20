@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type My_gin struct {
+type MyGin struct {
 	Hour               string    `json:"hour"`
 	Ad_id              string    `json:"ad_id"`
 	Campaign_id        string    `json:"campaign_id"`
@@ -21,7 +21,7 @@ type My_gin struct {
 	Updated_at         time.Time `json:"updated_at"`
 }
 
-func My_gin_obj() *gorm.DB {
+func MyGinObj() *gorm.DB {
 
 	var mysqlObj *gorm.DB
 

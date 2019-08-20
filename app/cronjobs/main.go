@@ -7,13 +7,10 @@ import (
 )
 
 func Init() {
-	main()
-}
-
-func main() {
-
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	go runTask()
+	go func() {
+		runTask()
+	}()
 
 	//阻塞主线程
 	//var run chan bool
@@ -23,6 +20,5 @@ func main() {
 func runTask() {
 	c := cron.New()
 	//c.AddFunc("5,30 * * * * *", Spider)
-	//c.AddFunc("15 00 19 * * *", My_gin_script)
 	c.Start()
 }

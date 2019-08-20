@@ -1,4 +1,4 @@
-package cronjobs
+package defaultExecution
 
 import (
 	"fmt"
@@ -14,11 +14,11 @@ import (
 )
 
 //var Chs = make([] chan int, 2) 使用通道阻塞主线程
-var wg sync.WaitGroup //官方推荐阻塞主线程方法
-var day_num = 10      //天数
-var hour_num = 24     //小时数
-func My_gin_script() {
 
+var day_num = 10  //天数
+var hour_num = 24 //小时数
+func MyGinScript() {
+	var wg sync.WaitGroup //官方推荐阻塞主线程方法
 	fmt.Println("开始执行")
 	fmt.Println(runtime.NumGoroutine())
 	t := time.Now()
@@ -59,7 +59,7 @@ func My_gin_script() {
 }
 
 func createData(wg *sync.WaitGroup, adData mongodb.MyGinData) {
-	var data mysql.My_gin
+	var data mysql.MyGin
 	var day string
 	//定义某一个广告的基本数据
 
@@ -85,7 +85,7 @@ func createData(wg *sync.WaitGroup, adData mongodb.MyGinData) {
 			data.Cpc_original_count = randObj.Intn(10)
 
 			data.Hour = strings.Join([]string{day, strconv.Itoa(h)}, " ") + ":00:00"
-			err := mysql.My_gin_obj().Create(&data).Error
+			err := mysql.MyGinObj().Create(&data).Error
 			if err != nil {
 				fmt.Println(err)
 			}

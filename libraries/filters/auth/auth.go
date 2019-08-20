@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+//获取校验类
 var driverList = map[string]func() Auth{
 	"cookie": func() Auth {
 		return drivers.NewCookieAuthDriver()
@@ -15,6 +16,7 @@ var driverList = map[string]func() Auth{
 	},
 }
 
+//声明接口
 type Auth interface {
 	Check(c *gin.Context) bool
 	User(c *gin.Context) interface{}
@@ -22,6 +24,7 @@ type Auth interface {
 	Logout(http *http.Request, w http.ResponseWriter) bool
 }
 
+//注册全局验证驱动程序
 func RegisterGlobalAuthDriver(authKey string, key string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		driver := GenerateAuthDriver(authKey)
@@ -30,6 +33,7 @@ func RegisterGlobalAuthDriver(authKey string, key string) gin.HandlerFunc {
 	}
 }
 
+//登陆校验中间件
 func Middleware(authKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		driver := GenerateAuthDriver(authKey)
@@ -44,6 +48,7 @@ func Middleware(authKey string) gin.HandlerFunc {
 	}
 }
 
+//生成身份验证驱动程序
 func GenerateAuthDriver(string string) *Auth {
 	var authDriver Auth
 	authDriver = driverList[string]()

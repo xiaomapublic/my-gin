@@ -2,7 +2,6 @@
 package test
 
 import (
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -19,7 +18,6 @@ import (
 	redisLib "my-gin/libraries/redis"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -31,13 +29,13 @@ type Api struct {
 //请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487040","campaign_id":"25838044971136768","product_id":146,"advertiser_id":103,"request_count":4594,"cpm_count":1076,"cpc_original_count":2,"division_id":3,"status":5}
 func (a *Api) MysqlCreate(c *gin.Context) {
 
-	var data mysqlMod.My_gin
+	var data mysqlMod.MyGin
 	err := c.BindJSON(&data)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
-	err = mysqlMod.My_gin_obj().Create(&data).Error
+	err = mysqlMod.MyGinObj().Create(&data).Error
 	if err == nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 0,
@@ -52,14 +50,14 @@ func (a *Api) MysqlCreate(c *gin.Context) {
 //请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487040","status":5}
 func (a *Api) MysqlUpdate(c *gin.Context) {
 
-	var data mysqlMod.My_gin
+	var data mysqlMod.MyGin
 	err := c.BindJSON(&data)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	data.Updated_at = time.Now()
 
-	err = mysqlMod.My_gin_obj().Model(&data).Where("hour = ? AND ad_id = ?", data.Hour, data.Ad_id).Update("status", data.Status).Error
+	err = mysqlMod.MyGinObj().Model(&data).Where("hour = ? AND ad_id = ?", data.Hour, data.Ad_id).Update("status", data.Status).Error
 
 	if err == nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -74,13 +72,13 @@ func (a *Api) MysqlUpdate(c *gin.Context) {
 //请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487040"}
 func (*Api) MysqlDelete(c *gin.Context) {
 
-	var data mysqlMod.My_gin
+	var data mysqlMod.MyGin
 	err := c.BindJSON(&data)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
-	err = mysqlMod.My_gin_obj().Where("hour = ? AND ad_id = ?", data.Hour, data.Ad_id).Delete(&data).Error
+	err = mysqlMod.MyGinObj().Where("hour = ? AND ad_id = ?", data.Hour, data.Ad_id).Delete(&data).Error
 
 	if err == nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -94,8 +92,8 @@ func (*Api) MysqlDelete(c *gin.Context) {
 
 //mysql获取全部数据
 func (*Api) MysqlGetAll(c *gin.Context) {
-	var data []mysqlMod.My_gin
-	err := mysqlMod.My_gin_obj().Find(&data).Error
+	var data []mysqlMod.MyGin
+	err := mysqlMod.MyGinObj().Find(&data).Error
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -116,7 +114,7 @@ func (*Api) MysqlGetWhere(c *gin.Context) {
 	_, prOk := c.GetQuery("product_id")
 	_, advOk := c.GetQuery("advertiser_id")
 
-	var data []mysqlMod.My_gin
+	var data []mysqlMod.MyGin
 
 	Db := mysql.GetORMByName("my_gin")
 
@@ -180,7 +178,7 @@ func (*Api) MysqlGetWhere(c *gin.Context) {
 //redis写入数据
 //请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487041","campaign_id":"25838044971136768","product_id":146,"advertiser_id":103,"request_count":4594,"cpm_count":1076,"cpc_original_count":2,"division_id":3,"status":5}
 func (*Api) RedisCreate(c *gin.Context) {
-	var data mysqlMod.My_gin
+	var data mysqlMod.MyGin
 	err := c.BindJSON(&data)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -206,7 +204,7 @@ func (*Api) RedisCreate(c *gin.Context) {
 //请求参数示例：{"hour":"2019-09-11 23:00:00","ad_id":"25982059966487041","request_count":5005,"cpm_count":4004,"status":100}
 func (*Api) RedisUpdate(c *gin.Context) {
 
-	var data mysqlMod.My_gin
+	var data mysqlMod.MyGin
 	err := c.BindJSON(&data)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -235,7 +233,7 @@ func (*Api) RedisUpdate(c *gin.Context) {
 //redis删除数据
 func (*Api) RedisDelete(c *gin.Context) {
 
-	var data mysqlMod.My_gin
+	var data mysqlMod.MyGin
 	err := c.BindJSON(&data)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -404,8 +402,8 @@ func (*Api) JwtSetLogin(c *gin.Context) {
 	info["name"] = data.Name
 	info["pwd"] = data.Pwd
 
+	//获取全局注册的验证驱动程序
 	authDr, _ := c.MustGet("jwt_auth").(*auth.Auth)
-
 	token, _ := (*authDr).Login(c.Request, c.Writer, info).(string)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -456,24 +454,4 @@ func (*Api) Concurrent(c *gin.Context) {
 	default:
 		// 没有待处理的发送操作
 	}
-}
-
-/**
- * 返回大写字符串
- */
-func MD5(str string) string {
-	data := []byte(str)
-	has := md5.Sum(data)
-	md5str1 := fmt.Sprintf("%x", has) //将[]byte转成16进制
-
-	return strings.ToUpper(md5str1)
-}
-
-//返回小写字符串
-func Md5(str string) string {
-	data := []byte(str)
-	has := md5.Sum(data)
-	md5str1 := fmt.Sprintf("%x", has) //将[]byte转成16进制
-
-	return md5str1
 }
