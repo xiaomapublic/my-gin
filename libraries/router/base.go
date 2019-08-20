@@ -9,14 +9,13 @@ import (
 	"my-gin/libraries/filters/auth"
 	"my-gin/libraries/handle"
 	"net/http"
+	"os"
 )
 
 func InitRouter() *gin.Engine {
 	router := gin.New()
-
 	// html模板
-	router.LoadHTMLGlob(config.UnmarshalConfig.Template + "/*")
-
+	router.LoadHTMLGlob(os.Getenv("GOPATH") + config.UnmarshalConfig.Template + "/*")
 	//性能分析
 	ginpprof.Wrap(router)
 

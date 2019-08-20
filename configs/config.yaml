@@ -5,7 +5,7 @@ server_port: ":8181"
 
 app_name: "my-gin"
 
-template: "/home/www/gopath/src/my-gin/static/html"
+template: "/src/my-gin/static/html"
 
 app_secret: "bl6hukk5vlbv68pthglg"
 
