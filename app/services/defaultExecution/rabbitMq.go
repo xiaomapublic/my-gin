@@ -20,7 +20,7 @@ func MonitorAdHourMq() {
 	logger := log.InitLog("monitorAdHourMq")
 	//消息接收
 
-	ch := rabbitmq.RabbitSession["my_vhost"]
+	ch := rabbitmq.Init("my_vhost")
 
 	//创建交换器
 	//err := ch.ExchangeDeclare("st", "fanout", true, true, false, false, nil)

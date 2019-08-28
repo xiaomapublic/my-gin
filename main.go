@@ -11,7 +11,6 @@ import (
 	"my-gin/libraries/log"
 	"my-gin/libraries/mongodb"
 	"my-gin/libraries/mysql"
-	"my-gin/libraries/rabbitmq"
 	"my-gin/libraries/redis"
 	routerBase "my-gin/libraries/router"
 	"net/http"
@@ -21,7 +20,8 @@ import (
 	"time"
 )
 
-func init() {
+// 应用主函数入口
+func main() {
 	//设置系统模式release为开发模式
 	gin.SetMode(UnmarshalConfig.Mode)
 	//gin框架会优先加载路由，会调用控制器里面init方法，配置文件需要注意
@@ -35,12 +35,6 @@ func init() {
 	mysql.Init()
 	redis.Init()
 	mongodb.Init()
-	rabbitmq.Init()
-
-}
-
-// 应用主函数入口
-func main() {
 
 	logger := log.InitLog("main")
 	logger.Info("cup核数：", runtime.NumCPU())

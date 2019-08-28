@@ -10,6 +10,8 @@ BINARY_UNIX=$(BINARY_NAME)_unix
 
 all: run
 
+.PHONY:build
+
 build: ## Build for Linux
 	$(GOBUILD) -o ./build/$(BINARY_NAME) -ldflags="-s -w" -tags=jsoniter -v ./
 

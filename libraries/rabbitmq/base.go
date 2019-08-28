@@ -6,21 +6,14 @@ import (
 	. "my-gin/libraries/config"
 )
 
-var RabbitSession map[string]*amqp.Channel
+func Init(vhost string) *amqp.Channel {
 
-func Init() {
-
-	RabbitSession = make(map[string]*amqp.Channel, len(DefaultConfig.GetStringMap("rabbitmq")))
-
-	for key, c := range DefaultConfig.GetStringMap("rabbitmq") {
-		conOne := c.(map[string]interface{})
-		vhost := key
-		addr := conOne["addr"].(string)
-		user := conOne["user"].(string)
-		pwd := conOne["pwd"].(string)
-		RabbitSession[vhost] = NewRabbitMq(vhost, addr, user, pwd)
-	}
-
+	rabbitmq := DefaultConfig.GetStringMap("rabbitmq")
+	conOne := rabbitmq[vhost].(map[string]interface{})
+	addr := conOne["addr"].(string)
+	user := conOne["user"].(string)
+	pwd := conOne["pwd"].(string)
+	return NewRabbitMq(vhost, addr, user, pwd)
 }
 
 func NewRabbitMq(vhost string, addr string, user string, pwd string) *amqp.Channel {

@@ -106,19 +106,21 @@ func (*Api) MysqlGetAll(c *gin.Context) {
 
 //mysql根据条件查询,调用RABBITMQ
 func (*Api) MysqlGetWhere(c *gin.Context) {
-	start_time := c.Query("start_time")
-	end_time := c.Query("end_time")
-	page, _ := strconv.Atoi(c.Query("page"))
-	_, adOk := c.GetQuery("ad_id")
-	_, caOk := c.GetQuery("campaign_id")
-	_, prOk := c.GetQuery("product_id")
-	_, advOk := c.GetQuery("advertiser_id")
+	start_time := c.DefaultPostForm("start_time", "2013-07-01 00:00:00")
+	end_time := c.DefaultPostForm("end_time", "2013-07-06 23:00:00")
+	page, _ := strconv.Atoi(c.DefaultPostForm("page", "1"))
+	_, adOk := c.GetPostForm("ad_id")
+	_, caOk := c.GetPostForm("campaign_id")
+	_, prOk := c.GetPostForm("product_id")
+	_, advOk := c.GetPostForm("advertiser_id")
+
+	//fmt.Println(start_time, end_time, page, adOk, caOk, prOk, advOk)
 
 	var data []mysqlMod.MyGin
 
 	Db := mysql.GetORMByName("my_gin")
 
-	pageTotal := 1000
+	pageTotal := 15
 	offset := (page - 1) * pageTotal
 
 	if adOk == true {
@@ -130,9 +132,9 @@ func (*Api) MysqlGetWhere(c *gin.Context) {
 	} else if advOk == true {
 		Db.Raw("select `hour`,advertiser_id, sum(request_count) as request_count, sum(cpm_count) as cpm_count, sum(cpc_original_count) as cpc_original_count from my_gin WHERE `hour` >= ? AND `hour` <= ? GROUP BY `hour`,advertiser_id ORDER BY `hour` DESC LIMIT ?,?", start_time, end_time, offset, pageTotal).Scan(&data)
 	}
-
-	ch := rabbitmq.RabbitSession["my_vhost"]
-
+	//fmt.Printf("%+v", data)
+	ch := rabbitmq.Init("my_vhost")
+	defer ch.Close()
 	//创建交换器
 	//err := ch.ExchangeDeclare("", "direct", true, true, false, false, nil)
 

@@ -28,7 +28,7 @@ func RegisterApiRouter(router *gin.Engine) {
 			testApiRouter.POST("/Api/MysqlUpdate", testApi.MysqlUpdate)
 			testApiRouter.POST("/Api/MysqlDelete", testApi.MysqlDelete)
 			testApiRouter.GET("/Api/MysqlGetAll", testApi.MysqlGetAll)
-			testApiRouter.GET("/Api/MysqlGetWhere", testApi.MysqlGetWhere)
+			testApiRouter.POST("/Api/MysqlGetWhere", testApi.MysqlGetWhere)
 			testApiRouter.POST("/Api/RedisCreate", testApi.RedisCreate)
 			testApiRouter.POST("/Api/RedisUpdate", testApi.RedisUpdate)
 			testApiRouter.POST("/Api/RedisDelete", testApi.RedisDelete)
