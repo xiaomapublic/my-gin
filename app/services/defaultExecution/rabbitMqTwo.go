@@ -1,8 +1,8 @@
 package defaultExecution
 
 /**
-rabbitmq接收服务
-*/
+ *	rabbitmq接收服务,测试同一个队列两个接收者
+ */
 import (
 	"encoding/json"
 	"my-gin/app/models/mongodb"
@@ -10,12 +10,12 @@ import (
 	"my-gin/libraries/log"
 	mongodb2 "my-gin/libraries/mongodb"
 	"my-gin/libraries/rabbitmq"
-	"reflect"
 )
 
-func MonitorAdHourMq() {
+func MonitorAdHourMqTwo() {
 	var data []mysql.MyGin
 	var conn *mongodb.MyGin
+
 	logger := log.InitLog("monitorAdHourMq")
 	//消息接收
 
@@ -85,15 +85,4 @@ func MonitorAdHourMq() {
 	}()
 
 	<-forever
-}
-
-func Struct2Map(obj interface{}) map[string]interface{} {
-	t := reflect.TypeOf(obj)
-	v := reflect.ValueOf(obj)
-
-	var data = make(map[string]interface{})
-	for i := 0; i < t.NumField(); i++ {
-		data[t.Field(i).Name] = v.Field(i).Interface()
-	}
-	return data
 }

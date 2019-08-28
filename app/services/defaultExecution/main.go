@@ -12,6 +12,10 @@ func Init() {
 	}()
 
 	go func() {
+		MonitorAdHourMqTwo()
+	}()
+
+	go func() {
 		//监听键盘输入，根据输入执行指定任务
 		for {
 			var task string
