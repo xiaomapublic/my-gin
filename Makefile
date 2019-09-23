@@ -6,31 +6,32 @@ GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 BINARY_NAME=my-gin
-BINARY_UNIX=$(BINARY_NAME)_unix
+BINARY_LINUX=$(BINARY_NAME)-linux-amd64
+BINARY_UNIX=$(BINARY_NAME)-unix
 
 all: run
 
 .PHONY:build
 
 build: ## Build for Linux
-	$(GOBUILD) -o ./build/$(BINARY_NAME) -ldflags="-s -w" -tags=jsoniter -v ./
+	$(GOBUILD) -o $(BINARY_LINUX) -ldflags="-s -w" -tags=jsoniter -v ./
 
 fmt: ## Fmt previous build
 	$(GOFMT) $(BINARY_NAME)
 
 clean:  ## Remove previous build
 	$(GOCLEAN)
-	rm -f ./build/$(BINARY_NAME)
-	rm -f ./build/$(BINARY_UNIX)
+	rm -f $(BINARY_LINUX)
+	rm -f $(BINARY_UNIX)
 
 run: ## Run for Linux
-	$(GOBUILD) -o ./build/$(BINARY_NAME) -ldflags="-s -w" -tags=jsoniter -v ./
-	./build/$(BINARY_NAME)
+	$(GOBUILD) -o $(BINARY_LINUX) -ldflags="-s -w" -tags=jsoniter -v ./
+	./$(BINARY_LINUX)
 
 restart: ## Restart for Linux
 	kill -INT $$(cat pid)
-	$(GOBUILD) -o ./build/$(BINARY_NAME) -ldflags="-s -w" -tags=jsoniter -v ./
-	./build/$(BINARY_NAME)
+	$(GOBUILD) -o $(BINARY_LINUX) -ldflags="-s -w" -tags=jsoniter -v ./
+	./$(BINARY_LINUX)
 
 deps:
 	$(GOGET) github.com/kardianos/govendor

@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	_ "my-gin/app/cronjobs"
 	_ "my-gin/app/services/defaultExecution"
-	. "my-gin/libraries/config"
+	"my-gin/libraries/config"
 	"my-gin/libraries/log"
 	_ "my-gin/libraries/mongodb"
 	_ "my-gin/libraries/mysql"
@@ -24,7 +24,7 @@ import (
 // 应用主函数入口
 func main() {
 	//设置系统模式release为开发模式
-	gin.SetMode(UnmarshalConfig.Mode)
+	gin.SetMode(config.UnmarshalConfig.Mode)
 
 	//设置cpu最大执行数量，go1.8以后的版本不用设置
 	//runtime.GOMAXPROCS(runtime.NumCPU())
@@ -40,7 +40,7 @@ func main() {
 	//}
 
 	srv := &http.Server{
-		Addr:    UnmarshalConfig.Server_port,
+		Addr:    config.UnmarshalConfig.Server_port,
 		Handler: router,
 	}
 

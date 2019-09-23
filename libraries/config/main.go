@@ -13,7 +13,6 @@ var DefaultConfig *viper.Viper
 //反序列化后的配置，供全局使用
 var UnmarshalConfig YamlSetting
 
-//单例模式获取默认配置数据
 func init() {
 	DefaultConfig = NewConfig(path.GetDirPath("configs"), "config", "yaml")
 	UnmarshalConfig = ParseYaml()
