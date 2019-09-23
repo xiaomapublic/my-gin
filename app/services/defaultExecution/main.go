@@ -5,7 +5,7 @@ import (
 )
 
 //默认执行程序
-func Init() {
+func init() {
 
 	go func() {
 		MonitorAdHourMq()

@@ -13,7 +13,7 @@ import (
 var Redigo map[string]map[string]*redis.Pool
 
 // init intialize redis config
-func Init() {
+func init() {
 
 	Redigo = make(map[string]map[string]*redis.Pool, len(DefaultConfig.GetStringMap("redis")))
 	for key, c := range DefaultConfig.GetStringMap("redis") {

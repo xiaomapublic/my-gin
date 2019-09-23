@@ -12,7 +12,7 @@ import (
 
 var MongoSession map[string]*mgo.Database
 
-func Init() {
+func init() {
 
 	MongoSession = make(map[string]*mgo.Database, len(UnmarshalConfig.Mongodb))
 

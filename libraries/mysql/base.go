@@ -13,7 +13,7 @@ import (
 
 var Gorm map[string]*gorm.DB
 
-func Init() {
+func init() {
 	Gorm = make(map[string]*gorm.DB)
 	NewDB()
 }

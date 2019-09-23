@@ -20,7 +20,6 @@ func Spider() {
 
 	f.SetActiveSheet(index)
 
-	config.DefaultConfigInit()
 	path := config.DefaultConfig.GetString("excel")
 
 	_, err := os.Stat(path)

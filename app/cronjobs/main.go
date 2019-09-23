@@ -6,7 +6,7 @@ import (
 	"runtime"
 )
 
-func Init() {
+func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	go func() {
 		runTask()
@@ -19,6 +19,6 @@ func Init() {
 
 func runTask() {
 	c := cron.New()
-	//c.AddFunc("5,30 * * * * *", Spider)
+	c.AddFunc("1 0 * * * *", Spider)
 	c.Start()
 }

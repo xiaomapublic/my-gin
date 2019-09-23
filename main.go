@@ -3,46 +3,34 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io/ioutil"
-	"my-gin/app/cronjobs"
-	"my-gin/app/services/defaultExecution"
+	_ "my-gin/app/cronjobs"
+	_ "my-gin/app/services/defaultExecution"
 	. "my-gin/libraries/config"
 	"my-gin/libraries/log"
-	"my-gin/libraries/mongodb"
-	"my-gin/libraries/mysql"
-	"my-gin/libraries/redis"
+	_ "my-gin/libraries/mongodb"
+	_ "my-gin/libraries/mysql"
+	_ "my-gin/libraries/redis"
 	routerBase "my-gin/libraries/router"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // 应用主函数入口
 func main() {
 	//设置系统模式release为开发模式
 	gin.SetMode(UnmarshalConfig.Mode)
-	//gin框架会优先加载路由，会调用控制器里面init方法，配置文件需要注意
-	DefaultConfigInit()
-	//初始化日志文件
 
 	//设置cpu最大执行数量，go1.8以后的版本不用设置
 	//runtime.GOMAXPROCS(runtime.NumCPU())
 
-	//初始化数据库,包一级声明的变量来说，它们的生命周期和整个程序的运行周期是一致的
-	mysql.Init()
-	redis.Init()
-	mongodb.Init()
-
 	logger := log.InitLog("main")
 	logger.Info("cup核数：", runtime.NumCPU())
-
-	//默认执行任务
-	defaultExecution.Init()
-	//定时任务
-	cronjobs.Init()
 	//获取gin初始化实例
 	router := routerBase.InitRouter()
 

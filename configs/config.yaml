@@ -5,7 +5,7 @@ server_port: ":8181"
 
 app_name: "my-gin"
 
-template: "/src/my-gin/static/html"
+template: "static/html"
 
 app_secret: "bl6hukk5vlbv68pthglg"
 
@@ -16,13 +16,13 @@ jwt:
   alg: "HS256"
 
 log:
-  path: "/home/my-gin/logs/"
+  path: "/var/log/my-gin/logs/"
   max_size: 128
   max_backups: 30
   max_age: 7
   compress: true
 
-excel: "/home/my-gin/excel/"
+excel: "/var/log/my-gin/excel/"
 
 mysql:
   my_gin:
