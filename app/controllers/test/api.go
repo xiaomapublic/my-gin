@@ -1,11 +1,13 @@
-//示例代码
+// 示例代码
 package test
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jianfengye/collection"
 	"github.com/streadway/amqp"
+	"github.com/uniplaces/carbon"
 	"gopkg.in/mgo.v2/bson"
 	"math/rand"
 	mongodbMod "my-gin/app/models/mongodb"
@@ -25,8 +27,8 @@ import (
 type Api struct {
 }
 
-//mysql写入数据
-//请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487040","campaign_id":"25838044971136768","product_id":146,"advertiser_id":103,"request_count":4594,"cpm_count":1076,"cpc_original_count":2,"division_id":3,"status":5}
+// mysql写入数据
+// 请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487040","campaign_id":"25838044971136768","product_id":146,"advertiser_id":103,"request_count":4594,"cpm_count":1076,"cpc_original_count":2,"division_id":3,"status":5}
 func (a *Api) MysqlCreate(c *gin.Context) {
 
 	var data mysqlMod.MyGin
@@ -46,8 +48,8 @@ func (a *Api) MysqlCreate(c *gin.Context) {
 
 }
 
-//mysql更新数据
-//请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487040","status":5}
+// mysql更新数据
+// 请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487040","status":5}
 func (a *Api) MysqlUpdate(c *gin.Context) {
 
 	var data mysqlMod.MyGin
@@ -68,8 +70,8 @@ func (a *Api) MysqlUpdate(c *gin.Context) {
 	}
 }
 
-//mysql删除数据
-//请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487040"}
+// mysql删除数据
+// 请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487040"}
 func (*Api) MysqlDelete(c *gin.Context) {
 
 	var data mysqlMod.MyGin
@@ -90,21 +92,84 @@ func (*Api) MysqlDelete(c *gin.Context) {
 
 }
 
-//mysql获取全部数据
+// mysql获取全部数据
 func (*Api) MysqlGetAll(c *gin.Context) {
 	var data []mysqlMod.MyGin
-	err := mysqlMod.MyGinObj().Find(&data).Error
+	err := mysqlMod.MyGinObj().Limit(10).Find(&data).Error
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+
+	// 时间操作
+	nowTime := carbon.Now().AddHour().String()
+
+	// 集合操作
+	arr := collection.NewObjCollection(data)
+
+	// 排序
+	arr.SortBy("Request_count")
+
+	// 取出一列值
+	arrPluck := arr.Pluck("Request_count")
+	arrPluck.DD()
+
+	// 根据条件筛选数据
+	arrFiter := arr.Filter(func(item interface{}, key int) bool {
+		val := item.(mysqlMod.MyGin)
+		return val.Request_count > 5000
+	})
+
+	// each遍历数组
+	request_count := 0
+	arrFiter.Each(func(item interface{}, key int) {
+		v := item.(mysqlMod.MyGin)
+		request_count += v.Request_count
+	})
+
+	// 格式化输出
+	type Respon struct {
+		Hour          string
+		Ad_id         string
+		Status        string
+		Request_count int
+	}
+	arrEach := collection.NewObjCollection(make([]Respon, 0))
+	arrFiter.Each(func(item interface{}, key int) {
+		var newMap Respon
+		v := item.(mysqlMod.MyGin)
+
+		newMap.Hour = carbon.NewCarbon(v.Hour).String()
+		newMap.Ad_id = v.Ad_id
+		if v.Status == 5 {
+			newMap.Status = "启动"
+		} else {
+			newMap.Status = "停用"
+		}
+		newMap.Request_count = v.Request_count
+		arrEach.Append(newMap)
+	})
+
+	// map重新创建切片
+	arrMap := arrEach.Map(func(item interface{}, key int) interface{} {
+		v := item.(Respon)
+		return v.Request_count
+	})
+
+	// reduce聚合计算
+	arrReduce := arrMap.Reduce(func(carry collection.IMix, item collection.IMix) collection.IMix {
+		carryInt, _ := carry.ToInt()
+		itemInt, _ := item.ToInt()
+		return collection.NewMix(carryInt + itemInt)
+	})
+
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
-		"msg":  "",
-		"data": data,
+		"msg":  nowTime,
+		"data": arrReduce,
 	})
 }
 
-//mysql根据条件查询,调用RABBITMQ
+// mysql根据条件查询,调用RABBITMQ
 func (*Api) MysqlGetWhere(c *gin.Context) {
 	start_time := c.DefaultPostForm("start_time", "2013-07-01 00:00:00")
 	end_time := c.DefaultPostForm("end_time", "2013-07-06 23:00:00")
@@ -114,7 +179,7 @@ func (*Api) MysqlGetWhere(c *gin.Context) {
 	_, prOk := c.GetPostForm("product_id")
 	_, advOk := c.GetPostForm("advertiser_id")
 
-	//fmt.Println(start_time, end_time, page, adOk, caOk, prOk, advOk)
+	// fmt.Println(start_time, end_time, page, adOk, caOk, prOk, advOk)
 
 	var data []mysqlMod.MyGin
 
@@ -132,14 +197,14 @@ func (*Api) MysqlGetWhere(c *gin.Context) {
 	} else if advOk == true {
 		Db.Raw("select `hour`,advertiser_id, sum(request_count) as request_count, sum(cpm_count) as cpm_count, sum(cpc_original_count) as cpc_original_count from my_gin WHERE `hour` >= ? AND `hour` <= ? GROUP BY `hour`,advertiser_id ORDER BY `hour` DESC LIMIT ?,?", start_time, end_time, offset, pageTotal).Scan(&data)
 	}
-	//fmt.Printf("%+v", data)
+	// fmt.Printf("%+v", data)
 	ch := rabbitmq.Init("my_vhost")
 	defer ch.Close()
-	//创建交换器
-	//err := ch.ExchangeDeclare("", "direct", true, true, false, false, nil)
+	// 创建交换器
+	// err := ch.ExchangeDeclare("", "direct", true, true, false, false, nil)
 
-	//使用默认交换器
-	//创建队列
+	// 使用默认交换器
+	// 创建队列
 	q, err := ch.QueueDeclare(
 		"adHour", // name  有名字！
 		true,     // durable  持久性的,如果事前已经声明了该队列，不能重复声明
@@ -149,7 +214,7 @@ func (*Api) MysqlGetWhere(c *gin.Context) {
 		nil,      // arguments
 	)
 
-	//err = ch.QueueBind("adHour", "ad", "st", false, nil)
+	// err = ch.QueueBind("adHour", "ad", "st", false, nil)
 
 	rabbitmq.FailOnError(err, "Failed to declare a queue")
 
@@ -177,8 +242,8 @@ func (*Api) MysqlGetWhere(c *gin.Context) {
 	})
 }
 
-//redis写入数据
-//请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487041","campaign_id":"25838044971136768","product_id":146,"advertiser_id":103,"request_count":4594,"cpm_count":1076,"cpc_original_count":2,"division_id":3,"status":5}
+// redis写入数据
+// 请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487041","campaign_id":"25838044971136768","product_id":146,"advertiser_id":103,"request_count":4594,"cpm_count":1076,"cpc_original_count":2,"division_id":3,"status":5}
 func (*Api) RedisCreate(c *gin.Context) {
 	var data mysqlMod.MyGin
 	err := c.BindJSON(&data)
@@ -186,14 +251,14 @@ func (*Api) RedisCreate(c *gin.Context) {
 		fmt.Println(err.Error())
 	}
 
-	//定义redis实例类
+	// 定义redis实例类
 	var redisClass redisLib.RedisInstanceClass
-	//根据配置获取某个具体redis实例
+	// 根据配置获取某个具体redis实例
 	redisClass.GetRedigoByName("default", "master")
-	//string
+	// string
 	redisClass.Set("set", data.Ad_id)
 	redisClass.SetEx("setex", data.Hour, 100)
-	//hash
+	// hash
 	redisClass.HMSet("hash_"+data.Ad_id, data)
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
@@ -202,8 +267,8 @@ func (*Api) RedisCreate(c *gin.Context) {
 	})
 }
 
-//redis更新数据
-//请求参数示例：{"hour":"2019-09-11 23:00:00","ad_id":"25982059966487041","request_count":5005,"cpm_count":4004,"status":100}
+// redis更新数据
+// 请求参数示例：{"hour":"2019-09-11 23:00:00","ad_id":"25982059966487041","request_count":5005,"cpm_count":4004,"status":100}
 func (*Api) RedisUpdate(c *gin.Context) {
 
 	var data mysqlMod.MyGin
@@ -214,10 +279,10 @@ func (*Api) RedisUpdate(c *gin.Context) {
 
 	var redisClass redisLib.RedisInstanceClass
 	redisClass.GetRedigoByName("default", "master")
-	//string
+	// string
 	redisClass.Set("set", data.Ad_id)
 	redisClass.SetEx("setex", data.Hour, 100)
-	//hash
+	// hash
 	params := make(map[string]interface{})
 	params["Hour"] = data.Hour
 	params["Request_count"] = data.Request_count
@@ -232,7 +297,7 @@ func (*Api) RedisUpdate(c *gin.Context) {
 	})
 }
 
-//redis删除数据
+// redis删除数据
 func (*Api) RedisDelete(c *gin.Context) {
 
 	var data mysqlMod.MyGin
@@ -251,16 +316,16 @@ func (*Api) RedisDelete(c *gin.Context) {
 	})
 }
 
-//redis获取指定键
+// redis获取指定键
 func (*Api) RedisGetWhere(c *gin.Context) {
 
 	ad_id, _ := c.GetQuery("ad_id")
 
 	var redisClass redisLib.RedisInstanceClass
 	redisClass.GetRedigoByName("default", "slave")
-	//string
+	// string
 	dataString := redisClass.Get("set")
-	//hash
+	// hash
 	dataHash := redisClass.HMGetAll("hash_" + ad_id)
 	dataHashT := redisClass.HGet("hash_"+ad_id, "Product_id")
 	c.JSON(http.StatusOK, gin.H{
@@ -272,8 +337,8 @@ func (*Api) RedisGetWhere(c *gin.Context) {
 	})
 }
 
-//mongodb写入数据
-//请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487041","campaign_id":"25838044971136768","product_id":146,"advertiser_id":103,"request_count":4594,"cpm_count":1076,"cpc_original_count":2,"division_id":3,"status":5}
+// mongodb写入数据
+// 请求参数示例：{"hour":"2019-09-08 23:00:00","ad_id":"25982059966487041","campaign_id":"25838044971136768","product_id":146,"advertiser_id":103,"request_count":4594,"cpm_count":1076,"cpc_original_count":2,"division_id":3,"status":5}
 func (*Api) MongodbCreate(c *gin.Context) {
 	var data mongodbMod.MyGinData
 	err := c.BindJSON(&data)
@@ -296,8 +361,8 @@ func (*Api) MongodbCreate(c *gin.Context) {
 	}
 }
 
-//mongodb更新数据
-//请求参数示例：{"hour":"2019-09-11 23:00:00","ad_id":"25982059966487041","request_count":5005,"cpm_count":4004,"status":100}
+// mongodb更新数据
+// 请求参数示例：{"hour":"2019-09-11 23:00:00","ad_id":"25982059966487041","request_count":5005,"cpm_count":4004,"status":100}
 func (*Api) MongodbUpdate(c *gin.Context) {
 	var data mongodbMod.MyGinData
 	var params = make(map[string]interface{})
@@ -311,7 +376,7 @@ func (*Api) MongodbUpdate(c *gin.Context) {
 	params["cpm_count"] = data.Cpm_count
 	params["status"] = data.Status
 
-	datass := bson.M{"$set": params} //$set关键字表示只更新指定字段
+	datass := bson.M{"$set": params} // $set关键字表示只更新指定字段
 	_, err = conn.Mongodb().UpdateAll(bson.M{"ad_id": data.Ad_id, "hour": data.Hour}, datass)
 	if err == nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -322,7 +387,7 @@ func (*Api) MongodbUpdate(c *gin.Context) {
 	}
 }
 
-//mongodb删除数据
+// mongodb删除数据
 func (*Api) MongodbDelete(c *gin.Context) {
 	var data mongodbMod.MyGinData
 	var conn *mongodbMod.MyGin
@@ -342,7 +407,7 @@ func (*Api) MongodbDelete(c *gin.Context) {
 	}
 }
 
-//mongodb获取全部数据
+// mongodb获取全部数据
 func (*Api) MongodbGetAll(c *gin.Context) {
 	var conn *mongodbMod.MyGin
 	var data []mongodbMod.MyGinData
@@ -359,7 +424,7 @@ func (*Api) MongodbGetAll(c *gin.Context) {
 	})
 }
 
-//mongodb根据条件查询
+// mongodb根据条件查询
 func (*Api) MongodbGetWhere(c *gin.Context) {
 	var conn *mongodbMod.MyGin
 	var data []mongodbMod.MyGinData
@@ -377,7 +442,7 @@ func (*Api) MongodbGetWhere(c *gin.Context) {
 	})
 }
 
-//登陆获取token
+// 登陆获取token
 func (*Api) JwtSetLogin(c *gin.Context) {
 	var data mysqlMod.User_info
 	err := c.BindJSON(&data)
@@ -404,7 +469,7 @@ func (*Api) JwtSetLogin(c *gin.Context) {
 	info["name"] = data.Name
 	info["pwd"] = data.Pwd
 
-	//获取全局注册的验证驱动程序
+	// 获取全局注册的验证驱动程序
 	authDr, _ := c.MustGet("jwt_auth").(*auth.Auth)
 	token, _ := (*authDr).Login(c.Request, c.Writer, info).(string)
 
@@ -417,7 +482,7 @@ func (*Api) JwtSetLogin(c *gin.Context) {
 	})
 }
 
-//通过token获取用户信息
+// 通过token获取用户信息
 func (*Api) JwtGetUserInfo(c *gin.Context) {
 	authDr, _ := c.MustGet("jwt_auth").(*auth.Auth)
 
@@ -430,7 +495,7 @@ func (*Api) JwtGetUserInfo(c *gin.Context) {
 	})
 }
 
-//生成随机数
+// 生成随机数
 func (*Api) RandomNumber(c *gin.Context) {
 	randObj := rand.New(rand.NewSource(time.Now().UnixNano()))
 	c.JSON(http.StatusOK, gin.H{

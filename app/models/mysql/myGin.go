@@ -7,7 +7,7 @@ import (
 )
 
 type MyGin struct {
-	Hour               string    `json:"hour"`
+	Hour               time.Time `json:"hour"`
 	Ad_id              string    `json:"ad_id"`
 	Campaign_id        string    `json:"campaign_id"`
 	Product_id         int       `json:"product_id"`

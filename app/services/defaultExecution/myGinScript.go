@@ -2,6 +2,7 @@ package defaultExecution
 
 import (
 	"fmt"
+	"github.com/uniplaces/carbon"
 	"gopkg.in/mgo.v2/bson"
 	"math/rand"
 	"my-gin/app/models/mongodb"
@@ -84,7 +85,8 @@ func createData(wg *sync.WaitGroup, adData mongodb.MyGinData) {
 			data.Cpm_count = randObj.Intn(1000) + 100
 			data.Cpc_original_count = randObj.Intn(10)
 
-			data.Hour = strings.Join([]string{day, strconv.Itoa(h)}, " ") + ":00:00"
+			dataObj, _ := carbon.Parse(carbon.DefaultFormat, strings.Join([]string{day, strconv.Itoa(h)}, " ")+":00:00", "Asia/Shanghai")
+			data.Hour = dataObj.Local()
 			err := mysql.MyGinObj().Create(&data).Error
 			if err != nil {
 				fmt.Println(err)
