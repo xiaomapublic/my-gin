@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jianfengye/collection"
 	"github.com/streadway/amqp"
+	"github.com/syyongx/php2go"
 	"github.com/uniplaces/carbon"
 	"gopkg.in/mgo.v2/bson"
 	"math/rand"
@@ -161,6 +162,9 @@ func (*Api) MysqlGetAll(c *gin.Context) {
 		itemInt, _ := item.ToInt()
 		return collection.NewMix(carryInt + itemInt)
 	})
+
+	//类php插件
+	_ := php2go.MbStrlen("nihao你好")
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,

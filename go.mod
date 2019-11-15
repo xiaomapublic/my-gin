@@ -23,6 +23,7 @@ require (
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/swaggo/gin-swagger v1.2.0
 	github.com/swaggo/swag v1.6.2
+	github.com/syyongx/php2go v0.9.4
 	github.com/uniplaces/carbon v0.1.6
 	go.uber.org/zap v1.10.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
