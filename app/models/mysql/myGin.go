@@ -29,3 +29,7 @@ func MyGinObj() *gorm.DB {
 
 	return mysqlObj
 }
+
+func MyGinTidbObj() *gorm.DB {
+	return mysql.GetORMByName("tidb_gin").Table("my_gin")
+}

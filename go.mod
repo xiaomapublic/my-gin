@@ -17,6 +17,7 @@ require (
 	github.com/gorilla/sessions v1.2.0
 	github.com/jianfengye/collection v0.0.0-20191010064941-07ffabdee0ff
 	github.com/jinzhu/gorm v1.9.10
+	github.com/mattn/go-sqlite3 v2.0.0+incompatible // indirect
 	github.com/robfig/cron v1.2.0
 	github.com/rs/xid v1.2.1
 	github.com/spf13/viper v1.4.0

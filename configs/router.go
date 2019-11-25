@@ -12,10 +12,10 @@ import (
 var testApi *test.Api
 
 func RegisterApiRouter(router *gin.Engine) {
-	//swagger文档
+	// swagger文档
 	router.GET("/swagger/*any", ginSwagger.DisablingWrapHandler(swaggerFiles.Handler, "NAME_OF_ENV_VARIABLE"))
 
-	//示例接口路由
+	// 示例接口路由
 	testApiRouter := router.Group("test")
 	{
 
@@ -41,6 +41,8 @@ func RegisterApiRouter(router *gin.Engine) {
 			testApiRouter.GET("/Api/RandomNumber", testApi.RandomNumber)
 			testApiRouter.GET("/Api/Concurrent", testApi.Concurrent)
 			testApiRouter.GET("/jwt/get", testApi.JwtGetUserInfo)
+			testApiRouter.GET("/Api/BigDataGet", testApi.BigDataGet)
+			testApiRouter.GET("/Api/TopK", testApi.TopK)
 		}
 
 	}

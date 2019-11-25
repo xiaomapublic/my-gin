@@ -16,10 +16,10 @@ import (
 
 //var Chs = make([] chan int, 2) 使用通道阻塞主线程
 
-var day_num = 10  //天数
+var day_num = 365 //天数
 var hour_num = 24 //小时数
 func MyGinScript() {
-	var wg sync.WaitGroup //官方推荐阻塞主线程方法
+
 	fmt.Println("开始执行")
 	fmt.Println(runtime.NumGoroutine())
 	t := time.Now()
@@ -27,13 +27,12 @@ func MyGinScript() {
 	var monConn *mongodb.MyGin
 	var adData []mongodb.MyGinData
 
-	err := monConn.Mongodb().Find(bson.M{"campaign_id": bson.M{"$ne": ""}, "product_id": bson.M{"$gt": 0}, "advertiser_id": bson.M{"$gt": 0}, "division_id": bson.M{"$gt": 0}}).All(&adData)
+	err := monConn.Mongodb().Find(bson.M{"Campaign_id": bson.M{"$ne": ""}, "Product_id": bson.M{"$gt": 0}, "Advertiser_id": bson.M{"$gt": 0}, "Division_id": bson.M{"$gt": 0}}).All(&adData)
 	fmt.Println(adData)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
-	wg.Add(len(adData))
 	//
 	//fmt.Println(adData)
 	//return
@@ -41,7 +40,7 @@ func MyGinScript() {
 	for _, data := range adData {
 
 		//Chs[n] = make(chan int)
-		go createData(&wg, data)
+		createData(data)
 		//createData(&wg)
 
 	}
@@ -51,7 +50,6 @@ func MyGinScript() {
 	//}
 	fmt.Println(runtime.NumGoroutine())
 
-	wg.Wait()
 	elapsed := time.Since(t)
 
 	fmt.Println("app elapsed:", elapsed)
@@ -59,7 +57,7 @@ func MyGinScript() {
 
 }
 
-func createData(wg *sync.WaitGroup, adData mongodb.MyGinData) {
+func createData(adData mongodb.MyGinData) {
 	var data mysql.MyGin
 	var day string
 	//定义某一个广告的基本数据
@@ -76,7 +74,7 @@ func createData(wg *sync.WaitGroup, adData mongodb.MyGinData) {
 	//记录多少天的数据
 	for a := 1; a <= day_num; a++ {
 
-		day = time.Date(2019, time.August, 30, 0, 0, 0, 0, time.UTC).AddDate(0, 0, a).Format("2006-01-02")
+		day = time.Date(2019, time.June, 30, 0, 0, 0, 0, time.UTC).AddDate(0, 0, a).Format("2006-01-02")
 
 		//记录每天24小时的数据
 		for h := 0; h < hour_num; h++ {
@@ -87,12 +85,25 @@ func createData(wg *sync.WaitGroup, adData mongodb.MyGinData) {
 
 			dataObj, _ := carbon.Parse(carbon.DefaultFormat, strings.Join([]string{day, strconv.Itoa(h)}, " ")+":00:00", "Asia/Shanghai")
 			data.Hour = dataObj.Local()
-			err := mysql.MyGinObj().Create(&data).Error
-			if err != nil {
-				fmt.Println(err)
-			}
-		}
+			var err error
 
+			var wg sync.WaitGroup //官方推荐阻塞主线程方法
+			wg.Add(2)
+			go func() {
+				if err = mysql.MyGinObj().Create(&data).Error; err != nil {
+					fmt.Println(err)
+				}
+				wg.Done()
+			}()
+
+			go func() {
+				if err = mysql.MyGinTidbObj().Create(&data).Error; err != nil {
+					fmt.Println(err)
+				}
+				wg.Done()
+			}()
+			wg.Wait()
+		}
 	}
-	wg.Done()
+
 }

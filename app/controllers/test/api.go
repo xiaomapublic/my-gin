@@ -19,8 +19,11 @@ import (
 	"my-gin/libraries/mysql"
 	"my-gin/libraries/rabbitmq"
 	redisLib "my-gin/libraries/redis"
+	"my-gin/libraries/util"
 	"net/http"
+	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -163,8 +166,8 @@ func (*Api) MysqlGetAll(c *gin.Context) {
 		return collection.NewMix(carryInt + itemInt)
 	})
 
-	//类php插件
-	_ := php2go.MbStrlen("nihao你好")
+	// 类php插件
+	php2go.MbStrlen("nihao你好")
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
@@ -175,8 +178,8 @@ func (*Api) MysqlGetAll(c *gin.Context) {
 
 // mysql根据条件查询,调用RABBITMQ
 func (*Api) MysqlGetWhere(c *gin.Context) {
-	start_time := c.DefaultPostForm("start_time", "2013-07-01 00:00:00")
-	end_time := c.DefaultPostForm("end_time", "2013-07-06 23:00:00")
+	start_time := c.DefaultPostForm("start_time", "2019-07-10 00:00:00")
+	end_time := c.DefaultPostForm("end_time", "2019-07-10 23:00:00")
 	page, _ := strconv.Atoi(c.DefaultPostForm("page", "1"))
 	_, adOk := c.GetPostForm("ad_id")
 	_, caOk := c.GetPostForm("campaign_id")
@@ -193,7 +196,7 @@ func (*Api) MysqlGetWhere(c *gin.Context) {
 	offset := (page - 1) * pageTotal
 
 	if adOk == true {
-		Db.Raw("SELECT * FROM my_gin WHERE `hour` >= ? AND `hour` <= ? ORDER BY `hour` DESC LIMIT ?,?", start_time, end_time, offset, pageTotal).Scan(&data)
+		Db.Raw("SELECT * FROM c_ad_hours WHERE `hour` >= ? AND `hour` <= ? ORDER BY `hour` DESC LIMIT ?,?", start_time, end_time, offset, pageTotal).Scan(&data)
 	} else if caOk == true {
 		Db.Raw("select `hour`,`campaign_id`, sum(request_count) as request_count, sum(cpm_count) as cpm_count, sum(cpc_original_count) as cpc_original_count from my_gin WHERE `hour` >= ? AND `hour` <= ? GROUP BY `hour`,`campaign_id` ORDER BY `hour` DESC LIMIT ?,?", start_time, end_time, offset, pageTotal).Scan(&data)
 	} else if prOk == true {
@@ -201,7 +204,7 @@ func (*Api) MysqlGetWhere(c *gin.Context) {
 	} else if advOk == true {
 		Db.Raw("select `hour`,advertiser_id, sum(request_count) as request_count, sum(cpm_count) as cpm_count, sum(cpc_original_count) as cpc_original_count from my_gin WHERE `hour` >= ? AND `hour` <= ? GROUP BY `hour`,advertiser_id ORDER BY `hour` DESC LIMIT ?,?", start_time, end_time, offset, pageTotal).Scan(&data)
 	}
-	// fmt.Printf("%+v", data)
+	fmt.Printf("%+v", data)
 	ch := rabbitmq.Init("my_vhost")
 	defer ch.Close()
 	// 创建交换器
@@ -525,4 +528,155 @@ func (*Api) Concurrent(c *gin.Context) {
 	default:
 		// 没有待处理的发送操作
 	}
+}
+
+// mysql大数据量测试
+func (*Api) BigDataGet(c *gin.Context) {
+
+	stimeQuery := c.DefaultQuery("stime", carbon.Now().DateString())
+	etimeQuery := c.DefaultQuery("etime", carbon.Now().DateString())
+	offset := c.DefaultQuery("offset", "0")
+	limit := c.DefaultQuery("limit", "15")
+
+	stime, _ := carbon.Parse(carbon.DateFormat, stimeQuery, "Asia/Shanghai")
+	etime, _ := carbon.Parse(carbon.DateFormat, etimeQuery, "Asia/Shanghai")
+	shour := stime.StartOfDay().String()
+	ehour := etime.EndOfDay().String()
+	var (
+		mysqlCount int
+		tidbCount  int
+		err        error
+	)
+
+	t1 := time.Now()
+	if err = mysqlMod.MyGinObj().Where("1=1 AND status=5 AND hour >= ? AND hour <= ?", shour, ehour).Count(&mysqlCount).Error; err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	t2 := time.Now()
+	fmt.Println("mysqlCount运行时间：", t2.Sub(t1))
+
+	t3 := time.Now()
+	if err = mysqlMod.MyGinTidbObj().Where("1=1 AND status=5 AND hour >= ? AND hour <= ?", shour, ehour).Count(&tidbCount).Error; err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	t4 := time.Now()
+	fmt.Println("tidbCount运行时间：", t4.Sub(t3))
+
+	var (
+		mysqlData []mysqlMod.MyGin
+		tidbData  []mysqlMod.MyGin
+	)
+	t5 := time.Now()
+	_ = mysqlMod.MyGinObj().Where("1=1 AND status=5 AND hour >= ? AND hour <= ?", shour, ehour).Offset(offset).Limit(limit).Find(&mysqlData).Error
+	t6 := time.Now()
+	fmt.Println("mysqlData运行时间：", t6.Sub(t5))
+
+	t7 := time.Now()
+	_ = mysqlMod.MyGinTidbObj().Where("1=1 AND status=5 AND hour >= ? AND hour <= ?", shour, ehour).Offset(offset).Limit(limit).Find(&tidbData).Error
+	t8 := time.Now()
+	fmt.Println("tidbData运行时间：", t8.Sub(t7))
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":       0,
+		"mysqlCount": mysqlCount,
+		"tidbCount":  tidbCount,
+		"mysqlData":  mysqlData,
+		"tidbData":   tidbData,
+	})
+}
+
+/**
+ * TopK堆排序
+ */
+func (*Api) TopK(c *gin.Context) {
+	countQuery := c.DefaultQuery("count", "100")
+	totalQuery := c.DefaultQuery("total", "100")
+	op := c.DefaultQuery("op", "asc")
+
+	count, _ := strconv.Atoi(countQuery)
+	total, _ := strconv.Atoi(totalQuery)
+
+	type Respon struct {
+		// Hour             time.Time `json:"hour"`
+		// AdId             string    `json:"ad_id"`
+		RequestCount int `json:"request_count"`
+		// CpmCount         int       `json:"cpm_count"`
+		// CpcOriginalCount int       `json:"cpc_original_count"`
+	}
+
+	var (
+		err        error
+		sort       []int
+		resultAsc  []int
+		resultDesc []int
+
+		page  = 1
+		limit = 20000
+	)
+
+	if total < limit {
+		limit = total
+	}
+
+	t1 := time.Now()
+	for {
+		offset := (page - 1) * limit
+		var mysqlData []Respon
+		if err = mysqlMod.MyGinObj().Select("request_count").Order("hour,ad_id ASC").Offset(offset).Limit(limit).Find(&mysqlData).Error; err != nil {
+			fmt.Println(err.Error())
+		}
+		collection.NewObjCollection(mysqlData).Each(func(item interface{}, key int) {
+			v := item.(Respon)
+			sort = append(sort, v.RequestCount)
+		})
+
+		if len(sort) >= total {
+			sort = sort[:total:total]
+			break
+		}
+
+		if len(mysqlData) < limit {
+			break
+		}
+		page++
+	}
+	fmt.Printf("sort切片地址：%p，数据总量：%d\n", sort, len(sort))
+	t2 := time.Now()
+	fmt.Println("readDB运行时间：", t2.Sub(t1), runtime.NumGoroutine())
+
+	if strings.ToUpper(op) == "DESC" {
+		maxNumber := util.GetMaxNumber(count, sort)
+		fmt.Printf("最大值堆地址：%p\n", maxNumber)
+		t3 := time.Now()
+		resultAsc = util.SmallHeapAsc(maxNumber)
+		fmt.Printf("正序地址：%p\n", resultAsc)
+		t4 := time.Now()
+		resultDesc = util.SmallHeapDesc(maxNumber)
+		fmt.Printf("倒序地址：%p\n", resultDesc)
+		t5 := time.Now()
+		fmt.Println("Asc运行时间：", t4.Sub(t3))
+		fmt.Println("Desc运行时间：", t5.Sub(t4))
+	} else {
+		minNumber := util.GetMinNumber(count, sort)
+		fmt.Printf("最小值堆地址：%p\n", minNumber)
+		t3 := time.Now()
+		resultAsc = util.LargeHeapAsc(minNumber)
+		fmt.Printf("正序地址：%p\n", resultAsc)
+		t4 := time.Now()
+		resultDesc = util.LargeHeapDesc(minNumber)
+		fmt.Printf("倒序地址：%p\n", resultDesc)
+		t5 := time.Now()
+		fmt.Println("Asc运行时间：", t4.Sub(t3))
+		fmt.Println("Desc运行时间：", t5.Sub(t4))
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  "",
+		"asc":  resultAsc,
+		"desc": resultDesc,
+	})
+
 }
