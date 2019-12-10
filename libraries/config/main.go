@@ -91,6 +91,10 @@ type Rabbitmq struct {
 	Pwd  string
 }
 
+type Elastic struct {
+	Host string
+}
+
 type YamlSetting struct {
 	Mode        string
 	Server_port string
@@ -105,4 +109,5 @@ type YamlSetting struct {
 	Redis       map[string][]Redis
 	Mongodb     map[string]Mongodb
 	Rabbitmq    map[string]Rabbitmq
+	Elastic     Elastic
 }

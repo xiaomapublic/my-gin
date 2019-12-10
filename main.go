@@ -18,29 +18,37 @@ import (
 	"runtime"
 	"time"
 
+	"flag"
 	"github.com/gin-gonic/gin"
+)
+
+var (
+	port = flag.String("port", config.UnmarshalConfig.Server_port, "http port")
+	mode = flag.String("mode", config.UnmarshalConfig.Mode, "app mod")
 )
 
 // 应用主函数入口
 func main() {
-	//设置系统模式release为开发模式
-	gin.SetMode(config.UnmarshalConfig.Mode)
+	// parse flag
+	flag.Parse()
+	// 设置系统模式模式
+	gin.SetMode(*mode)
 
-	//设置cpu最大执行数量，go1.8以后的版本不用设置
-	//runtime.GOMAXPROCS(runtime.NumCPU())
+	// 设置cpu最大执行数量，go1.8以后的版本不用设置
+	// runtime.GOMAXPROCS(runtime.NumCPU())
 
 	logger := log.InitLog("main")
 	logger.Info("cup核数：", runtime.NumCPU())
-	//获取gin初始化实例
+	// 获取gin初始化实例
 	router := routerBase.InitRouter()
 
-	//gin默认监听端口方式
-	//if err := router.Run(UnmarshalConfig.Server_port); err != nil {
+	// gin默认监听端口方式
+	// if err := router.Run(UnmarshalConfig.Server_port); err != nil {
 	//	log.Fatalf("listen: %s\n", err)
-	//}
+	// }
 
 	srv := &http.Server{
-		Addr:    config.UnmarshalConfig.Server_port,
+		Addr:    ":" + *port,
 		Handler: router,
 	}
 

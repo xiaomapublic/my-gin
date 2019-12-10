@@ -5,8 +5,9 @@ rabbitmq接收服务
 */
 import (
 	"encoding/json"
+	"fmt"
+	"gopkg.in/mgo.v2/bson"
 	"my-gin/app/models/mongodb"
-	"my-gin/app/models/mysql"
 	"my-gin/libraries/log"
 	mongodb2 "my-gin/libraries/mongodb"
 	"my-gin/libraries/rabbitmq"
@@ -14,7 +15,7 @@ import (
 )
 
 func MonitorAdHourMq() {
-	var data []mysql.MyGin
+	var data []mongodb.MyGinData
 	var conn *mongodb.MyGin
 	logger := log.InitLog("monitorAdHourMq")
 	//消息接收
@@ -61,14 +62,19 @@ func MonitorAdHourMq() {
 
 	go func() {
 		for d := range msgs {
-			json.Unmarshal(d.Body, &data)
-
+			_ = json.Unmarshal(d.Body, &data)
+			fmt.Printf("队列消耗1：%+v\n", data)
 			for _, val := range data {
-				param := Struct2Map(val)
-				param["_id"] = mongodb2.CreateId()
-				logger.Info(param["_id"])
-				err = conn.Mongodb().Insert(param)
-
+				count, _ := conn.Mongodb().Find(bson.M{"ad_id": val.Ad_id}).Count()
+				fmt.Printf("队列消耗1：%d 校验重复\n", count)
+				if count == 0 {
+					// param := Struct2Map(val)
+					val.Id = mongodb2.CreateId()
+					logger.Info(val.Id)
+					err = conn.Mongodb().Insert(val)
+				} else {
+					fmt.Printf("队列消耗1：%s 广告id重复\n", val.Ad_id)
+				}
 			}
 
 			// 确认消息被收到！！如果为真的，那么同在一个channel,在该消息之前未确认的消息都会确认，适合批量处理

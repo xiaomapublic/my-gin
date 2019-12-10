@@ -14,7 +14,7 @@ func HandleErrors() gin.HandlerFunc {
 
 				//初始化日志文件
 				logger := log.InitLog("error")
-				logger.Errorf("info", err)
+				logger.Errorf("error", err)
 
 				var (
 					errMsg     string

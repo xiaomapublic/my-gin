@@ -43,6 +43,9 @@ func RegisterApiRouter(router *gin.Engine) {
 			testApiRouter.GET("/jwt/get", testApi.JwtGetUserInfo)
 			testApiRouter.GET("/Api/BigDataGet", testApi.BigDataGet)
 			testApiRouter.GET("/Api/TopK", testApi.TopK)
+			testApiRouter.PUT("/Api/ElasticPut", testApi.ElasticPut)
+			testApiRouter.GET("/Api/ElasticSearch", testApi.ElasticSearch)
+			testApiRouter.GET("/Api/ElasticDelete", testApi.ElasticDelete)
 		}
 
 	}

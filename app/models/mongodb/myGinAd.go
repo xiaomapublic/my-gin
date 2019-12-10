@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-type MyGinData struct {
-	Id                 string    `json:"id" bson:"_id"`
+type MyGinAdData struct {
+	Hour               time.Time `json:"hour" bson:"hour"`
 	Ad_id              string    `json:"ad_id" bson:"ad_id"`
 	Campaign_id        string    `json:"campaign_id" bson:"campaign_id"`
 	Product_id         int       `json:"product_id" bson:"product_id"`
@@ -21,9 +21,9 @@ type MyGinData struct {
 	Updated_at         time.Time `json:"updated_at" bson:"updated_at"`
 }
 
-type MyGin struct {
+type MyGinAd struct {
 }
 
-func (*MyGin) Mongodb() *mgo.Collection {
-	return mongodb.MongoSession["mygin"].C("mygin")
+func (*MyGinAd) Mongodb() *mgo.Collection {
+	return mongodb.MongoSession["mygin"].C("my_gin")
 }

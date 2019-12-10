@@ -1,7 +1,7 @@
 # system
 mode: "debug"
 
-server_port: ":8181"
+server_port: "8181"
 
 app_name: "my-gin"
 
@@ -30,13 +30,6 @@ mysql:
     user: "root"
     passwd: "123456"
     port: "33066"
-    maxidleconns: 64 # 设置最大空闲数
-    maxopenconns: 128 # 设置最大连接数
-  tidb_gin:
-    host: "10.0.4.31"
-    user: "root"
-    passwd: ""
-    port: "4000"
     maxidleconns: 64 # 设置最大空闲数
     maxopenconns: 128 # 设置最大连接数
 
@@ -82,6 +75,9 @@ rabbitmq:
     addr: "10.0.4.31:5672"
     user: "go"
     pwd: "123456"
+
+elastic:
+  host: "http://10.0.4.31:9200"
 
 
 

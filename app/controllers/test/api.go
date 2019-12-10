@@ -2,10 +2,12 @@
 package test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jianfengye/collection"
+	elastic2 "github.com/olivere/elastic/v7"
 	"github.com/streadway/amqp"
 	"github.com/syyongx/php2go"
 	"github.com/uniplaces/carbon"
@@ -14,6 +16,7 @@ import (
 	mongodbMod "my-gin/app/models/mongodb"
 	mysqlMod "my-gin/app/models/mysql"
 	"my-gin/app/services/test"
+	"my-gin/libraries/elastic"
 	"my-gin/libraries/filters/auth"
 	"my-gin/libraries/mongodb"
 	"my-gin/libraries/mysql"
@@ -178,8 +181,8 @@ func (*Api) MysqlGetAll(c *gin.Context) {
 
 // mysql根据条件查询,调用RABBITMQ
 func (*Api) MysqlGetWhere(c *gin.Context) {
-	start_time := c.DefaultPostForm("start_time", "2019-07-10 00:00:00")
-	end_time := c.DefaultPostForm("end_time", "2019-07-10 23:00:00")
+	start_time := c.DefaultPostForm("start_time", "2019-07-07 00:00:00")
+	end_time := c.DefaultPostForm("end_time", "2019-07-07 00:00:00")
 	page, _ := strconv.Atoi(c.DefaultPostForm("page", "1"))
 	_, adOk := c.GetPostForm("ad_id")
 	_, caOk := c.GetPostForm("campaign_id")
@@ -192,11 +195,11 @@ func (*Api) MysqlGetWhere(c *gin.Context) {
 
 	Db := mysql.GetORMByName("my_gin")
 
-	pageTotal := 15
+	pageTotal := 60000
 	offset := (page - 1) * pageTotal
 
 	if adOk == true {
-		Db.Raw("SELECT * FROM c_ad_hours WHERE `hour` >= ? AND `hour` <= ? ORDER BY `hour` DESC LIMIT ?,?", start_time, end_time, offset, pageTotal).Scan(&data)
+		Db.Raw("SELECT * FROM my_gin WHERE `hour` >= ? AND `hour` <= ? ORDER BY `hour` DESC LIMIT ?,?", start_time, end_time, offset, pageTotal).Scan(&data)
 	} else if caOk == true {
 		Db.Raw("select `hour`,`campaign_id`, sum(request_count) as request_count, sum(cpm_count) as cpm_count, sum(cpc_original_count) as cpc_original_count from my_gin WHERE `hour` >= ? AND `hour` <= ? GROUP BY `hour`,`campaign_id` ORDER BY `hour` DESC LIMIT ?,?", start_time, end_time, offset, pageTotal).Scan(&data)
 	} else if prOk == true {
@@ -384,7 +387,7 @@ func (*Api) MongodbUpdate(c *gin.Context) {
 	params["status"] = data.Status
 
 	datass := bson.M{"$set": params} // $set关键字表示只更新指定字段
-	_, err = conn.Mongodb().UpdateAll(bson.M{"ad_id": data.Ad_id, "hour": data.Hour}, datass)
+	_, err = conn.Mongodb().UpdateAll(bson.M{"ad_id": data.Ad_id}, datass)
 	if err == nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 0,
@@ -535,55 +538,81 @@ func (*Api) BigDataGet(c *gin.Context) {
 
 	stimeQuery := c.DefaultQuery("stime", carbon.Now().DateString())
 	etimeQuery := c.DefaultQuery("etime", carbon.Now().DateString())
-	offset := c.DefaultQuery("offset", "0")
-	limit := c.DefaultQuery("limit", "15")
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "15"))
 
 	stime, _ := carbon.Parse(carbon.DateFormat, stimeQuery, "Asia/Shanghai")
 	etime, _ := carbon.Parse(carbon.DateFormat, etimeQuery, "Asia/Shanghai")
 	shour := stime.StartOfDay().String()
 	ehour := etime.EndOfDay().String()
+	mongoShour := stime.StartOfDay().Local()
+	mongoEhour := etime.EndOfDay().Local()
 	var (
+		err        error
+		t1         time.Time
+		t2         time.Time
 		mysqlCount int
 		tidbCount  int
-		err        error
+		mongoCount int
+		mysqlData  []mysqlMod.MyGin
+		tidbData   []mysqlMod.MyGin
+		mongoData  []mongodbMod.MyGinAdData
+		monConn    *mongodbMod.MyGinAd
 	)
 
-	t1 := time.Now()
+	t1 = time.Now()
 	if err = mysqlMod.MyGinObj().Where("1=1 AND status=5 AND hour >= ? AND hour <= ?", shour, ehour).Count(&mysqlCount).Error; err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	t2 := time.Now()
+	t2 = time.Now()
 	fmt.Println("mysqlCount运行时间：", t2.Sub(t1))
 
-	t3 := time.Now()
-	if err = mysqlMod.MyGinTidbObj().Where("1=1 AND status=5 AND hour >= ? AND hour <= ?", shour, ehour).Count(&tidbCount).Error; err != nil {
+	t1 = time.Now()
+	if mongoCount, err = monConn.Mongodb().Find(bson.M{"status": 5, "hour": bson.M{"$gte": mongoShour, "$lte": mongoEhour}}).Count(); err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	t4 := time.Now()
-	fmt.Println("tidbCount运行时间：", t4.Sub(t3))
+	t2 = time.Now()
+	fmt.Println("mongoCount运行时间：", t2.Sub(t1))
 
-	var (
-		mysqlData []mysqlMod.MyGin
-		tidbData  []mysqlMod.MyGin
-	)
-	t5 := time.Now()
-	_ = mysqlMod.MyGinObj().Where("1=1 AND status=5 AND hour >= ? AND hour <= ?", shour, ehour).Offset(offset).Limit(limit).Find(&mysqlData).Error
-	t6 := time.Now()
-	fmt.Println("mysqlData运行时间：", t6.Sub(t5))
+	// t1 = time.Now()
+	// if err = mysqlMod.MyGinTidbObj().Where("1=1 AND status=5 AND hour >= ? AND hour <= ?", shour, ehour).Count(&tidbCount).Error; err != nil {
+	// 	fmt.Println(err.Error())
+	// 	return
+	// }
+	// t2 = time.Now()
+	// fmt.Println("tidbCount运行时间：", t2.Sub(t1))
 
-	t7 := time.Now()
-	_ = mysqlMod.MyGinTidbObj().Where("1=1 AND status=5 AND hour >= ? AND hour <= ?", shour, ehour).Offset(offset).Limit(limit).Find(&tidbData).Error
-	t8 := time.Now()
-	fmt.Println("tidbData运行时间：", t8.Sub(t7))
+	t1 = time.Now()
+	if err = mysqlMod.MyGinObj().Where("1=1 AND status=5 AND hour >= ? AND hour <= ?", shour, ehour).Offset(offset).Limit(limit).Order("id").Find(&mysqlData).Error; err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	t2 = time.Now()
+	fmt.Println("mysqlData运行时间：", t2.Sub(t1))
+
+	// t1 := time.Now()
+	// _ = mysqlMod.MyGinTidbObj().Where("1=1 AND status=5 AND hour >= ? AND hour <= ?", shour, ehour).Offset(offset).Limit(limit).Find(&tidbData).Error
+	// t2 := time.Now()
+	// fmt.Println("tidbData运行时间：", t2.Sub(t1))
+	t1 = time.Now()
+	err = monConn.Mongodb().Find(bson.M{"status": 5, "hour": bson.M{"$gte": mongoShour, "$lte": mongoEhour}}).Skip(offset).Limit(limit).All(&mongoData)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	t2 = time.Now()
+	fmt.Println("mongoData运行时间：", t2.Sub(t1))
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":       0,
 		"mysqlCount": mysqlCount,
 		"tidbCount":  tidbCount,
+		"mongoCount": mongoCount,
 		"mysqlData":  mysqlData,
 		"tidbData":   tidbData,
+		"mongoData":  mongoData,
 	})
 }
 
@@ -601,7 +630,7 @@ func (*Api) TopK(c *gin.Context) {
 	type Respon struct {
 		// Hour             time.Time `json:"hour"`
 		// AdId             string    `json:"ad_id"`
-		RequestCount int `json:"request_count"`
+		RequestCount int `json:"request_count" bson:"request_count"`
 		// CpmCount         int       `json:"cpm_count"`
 		// CpcOriginalCount int       `json:"cpc_original_count"`
 	}
@@ -612,8 +641,9 @@ func (*Api) TopK(c *gin.Context) {
 		resultAsc  []int
 		resultDesc []int
 
-		page  = 1
-		limit = 20000
+		page    = 1
+		limit   = 20000
+		monConn *mongodbMod.MyGinAd
 	)
 
 	if total < limit {
@@ -624,7 +654,10 @@ func (*Api) TopK(c *gin.Context) {
 	for {
 		offset := (page - 1) * limit
 		var mysqlData []Respon
-		if err = mysqlMod.MyGinObj().Select("request_count").Order("hour,ad_id ASC").Offset(offset).Limit(limit).Find(&mysqlData).Error; err != nil {
+		// if err = mysqlMod.MyGinObj().Select("request_count").Offset(offset).Limit(limit).Find(&mysqlData).Error; err != nil {
+		// 	fmt.Println(err.Error())
+		// }
+		if err = monConn.Mongodb().Find(bson.M{}).Select(bson.M{"request_count": 1}).Skip(offset).Limit(limit).All(&mysqlData); err != nil {
 			fmt.Println(err.Error())
 		}
 		collection.NewObjCollection(mysqlData).Each(func(item interface{}, key int) {
@@ -678,5 +711,158 @@ func (*Api) TopK(c *gin.Context) {
 		"asc":  resultAsc,
 		"desc": resultDesc,
 	})
+
+}
+
+/**
+ * es操作,put
+ */
+func (*Api) ElasticPut(c *gin.Context) {
+
+	var (
+		put       interface{}
+		err       error
+		ctx       = context.Background()
+		monConn   *mongodbMod.MyGinAd
+		mongoData []mongodbMod.MyGinData
+	)
+
+	if err = monConn.Mongodb().Find(bson.M{}).Skip(0).Limit(1000).All(&mongoData); err != nil {
+		fmt.Println(err.Error())
+	}
+
+	esClient := elastic.Init()
+	for _, data := range mongoData {
+		if put, err = esClient.Index().Index("mongo").BodyJson(data).Do(ctx); err != nil {
+			fmt.Println(err.Error())
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  "",
+		"data": put,
+	})
+}
+
+/**
+ * es操作,search
+ */
+func (*Api) ElasticSearch(c *gin.Context) {
+	stimeQuery := c.DefaultQuery("stime", carbon.Now().DateString())
+	etimeQuery := c.DefaultQuery("etime", carbon.Now().DateString())
+	stime, _ := carbon.Parse(carbon.DefaultFormat, stimeQuery, "Asia/Shanghai")
+	etime, _ := carbon.Parse(carbon.DefaultFormat, etimeQuery, "Asia/Shanghai")
+	shour := stime.Local()
+	ehour := etime.Local()
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "15"))
+
+	fmt.Println(shour, ehour)
+
+	var (
+		ctx           = context.Background()
+		testIndexName = "my_gin"
+		item          []interface{}
+		// after = []interface{}{"hour", "ad_id"}
+	)
+
+	offset := (page - 1) * limit
+
+	esClient := elastic.Init()
+	termQuery := elastic2.NewRangeQuery("hour").Gte(shour).Lte(ehour)
+	searchResult, err := esClient.Search().
+		TrackTotalHits(true). // 返回正确的总数
+		// SearchAfter(after...).
+		Index(testIndexName). // 搜索的索引名称
+		Query(termQuery).     // 条件
+		// SortBy(elastic2.NewFieldSort("hour").Desc(), elastic2.NewFieldSort("ad_id.keyword").Desc()).
+		Sort("hour", false).          // 字符串排序加keyword
+		Sort("ad_id.keyword", false). // 字符串排序加keyword
+		From(offset).Size(limit).     // 分页
+		Pretty(true).                 // pretty print request and response JSON
+		Do(ctx)                       // 执行
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	if searchResult.Hits == nil {
+		fmt.Println("expected SearchResult.Hits != nil; got nil")
+	}
+	if searchResult.TotalHits() != 3 {
+		fmt.Printf("expected SearchResult.TotalHits() = %d; got %d\n", 3, searchResult.TotalHits())
+	}
+	if len(searchResult.Hits.Hits) != 3 {
+		fmt.Printf("expected len(SearchResult.Hits.Hits) = %d; got %d\n", 3, len(searchResult.Hits.Hits))
+	}
+
+	for _, hit := range searchResult.Hits.Hits {
+		if hit.Index != testIndexName {
+			fmt.Printf("expected SearchResult.Hits.Hit.Index = %q; got %q\n", testIndexName, hit.Index)
+		}
+		item = append(item, hit.Source)
+	}
+
+	total := searchResult.Hits.TotalHits.Value
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":  0,
+		"msg":   "",
+		"total": total,
+		"data":  item,
+		// "searchResult": searchResult,
+	})
+
+}
+
+/*
+ * es操作，delete
+ */
+func (*Api) ElasticDelete(c *gin.Context) {
+	var (
+		ctx           = context.Background()
+		testIndexName = "mongo"
+		item          []mongodbMod.MyGinData
+	)
+
+	esClient := elastic.Init()
+
+	searchResult, err := esClient.Search().
+		Index(testIndexName). // search in index "twitter" er" field, ascending
+		From(0).Size(2000).
+		Pretty(true). // pretty print request and response JSON
+		Do(ctx)       // execute
+	if err != nil {
+		fmt.Println(err)
+	}
+	if searchResult.Hits == nil {
+		fmt.Println("expected SearchResult.Hits != nil; got nil")
+	}
+	if searchResult.TotalHits() != 3 {
+		fmt.Printf("expected SearchResult.TotalHits() = %d; got %d\n", 3, searchResult.TotalHits())
+	}
+	if len(searchResult.Hits.Hits) != 3 {
+		fmt.Printf("expected len(SearchResult.Hits.Hits) = %d; got %d\n", 3, len(searchResult.Hits.Hits))
+	}
+
+	for _, hit := range searchResult.Hits.Hits {
+		if hit.Index != testIndexName {
+			fmt.Printf("expected SearchResult.Hits.Hit.Index = %q; got %q\n", testIndexName, hit.Index)
+		}
+		var data mongodbMod.MyGinData
+		json.Unmarshal(hit.Source, &data)
+		item = append(item, data)
+	}
+
+	for k, _ := range item {
+		res, err := esClient.Delete().
+			Index(testIndexName).
+			Id(strconv.Itoa(k + 1)).
+			Do(context.Background())
+		if err != nil {
+			println(err.Error())
+			return
+		}
+		fmt.Printf("delete result %s\n", res.Result)
+	}
 
 }

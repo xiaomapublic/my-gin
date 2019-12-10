@@ -20,6 +20,7 @@ func InitRouter() *gin.Engine {
 	ginpprof.Wrap(router)
 
 	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
 
 	// 错误处理
 	router.Use(handle.HandleErrors())

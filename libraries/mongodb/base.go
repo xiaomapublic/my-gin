@@ -34,7 +34,7 @@ func init() {
 func NewMongodb(addr []string, databaseName, user, pwd string, max_active int) *mgo.Database {
 	session, err := mgo.DialWithInfo(&mgo.DialInfo{
 		Addrs:     addr,
-		Timeout:   5 * time.Second,
+		Timeout:   200 * time.Second,
 		Database:  databaseName,
 		Username:  user,
 		Password:  pwd,
