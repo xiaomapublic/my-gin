@@ -715,6 +715,70 @@ func (*Api) TopK(c *gin.Context) {
 }
 
 /**
+ * redis有序集合新增
+ */
+func (*Api) RedisZSet(c *gin.Context) {
+	key, _ := c.GetQuery("key")
+	score, _ := c.GetQuery("score")
+	member, _ := c.GetQuery("member")
+
+	sort, _ := strconv.Atoi(score)
+
+	var redisClass redisLib.RedisInstanceClass
+	redisClass.GetRedigoByName("default", "master")
+	result := redisClass.ZAdd(key, sort, member)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  result,
+		"data": "",
+	})
+}
+
+/**
+ * redis有序集合删除
+ */
+func (*Api) RedisZRem(c *gin.Context) {
+	key, _ := c.GetQuery("key")
+	member, _ := c.GetQuery("member")
+
+	var redisClass redisLib.RedisInstanceClass
+	redisClass.GetRedigoByName("default", "master")
+	result := redisClass.ZRem(key, member)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  result,
+		"data": "",
+	})
+}
+
+/**
+ * redis有序集合获取
+ */
+func (*Api) RedisZRange(c *gin.Context) {
+	key, _ := c.GetQuery("key")
+	start, _ := c.GetQuery("start")
+	end, _ := c.GetQuery("end")
+
+	s, _ := strconv.Atoi(start)
+	e, _ := strconv.Atoi(end)
+	fmt.Println("返回1")
+	var redisClass redisLib.RedisInstanceClass
+	redisClass.GetRedigoByName("default", "slave")
+	resultAsc := redisClass.ZRange(key, s, e)
+	resultDesc := redisClass.ZRevrange(key, s, e)
+	fmt.Printf("%p\n", redisClass)
+	fmt.Printf("%p\n", redisClass)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  "result",
+		"data": map[string]interface{}{"asc": resultAsc, "desc": resultDesc},
+	})
+}
+
+/**
  * es操作,put
  */
 func (*Api) ElasticPut(c *gin.Context) {

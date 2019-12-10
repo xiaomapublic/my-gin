@@ -79,7 +79,9 @@ func (redis *RedisInstanceClass) GetRedigoByName(redisName string, instance stri
 
 // set插入数据
 func (rediss *RedisInstanceClass) Set(key string, value interface{}) bool {
-	_, err := rediss.redisConnInstance.Get().Do("SET", key, value)
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	_, err := connect.Get().Do("SET", key, value)
 	if err != nil {
 		log.InitLog("redis").Errorf("SET", "msg", err)
 		fmt.Println("redis set error")
@@ -90,7 +92,9 @@ func (rediss *RedisInstanceClass) Set(key string, value interface{}) bool {
 
 // setex插入数据与过期时间
 func (rediss *RedisInstanceClass) SetEx(key string, value interface{}, seconds int) bool {
-	_, err := rediss.redisConnInstance.Get().Do("SET", key, value, "EX", seconds)
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	_, err := connect.Get().Do("SET", key, value, "EX", seconds)
 	if err != nil {
 		log.InitLog("redis").Errorf("SETEX", "msg", err)
 		fmt.Println("redis setex error")
@@ -101,7 +105,9 @@ func (rediss *RedisInstanceClass) SetEx(key string, value interface{}, seconds i
 
 // get获取数据
 func (rediss *RedisInstanceClass) Get(key string) string {
-	ret, err := redis.String(rediss.redisConnInstance.Get().Do("GET", key))
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	ret, err := redis.String(connect.Get().Do("GET", key))
 	if err != nil {
 		log.InitLog("redis").Errorf("GET", "msg", err)
 		fmt.Println("redis get error")
@@ -111,7 +117,9 @@ func (rediss *RedisInstanceClass) Get(key string) string {
 
 // del删除数据
 func (rediss *RedisInstanceClass) Del(key interface{}) bool {
-	_, err := rediss.redisConnInstance.Get().Do("DEL", key)
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	_, err := connect.Get().Do("DEL", key)
 	if err != nil {
 		log.InitLog("redis").Errorf("DEL", "msg", err)
 		fmt.Println("redis del error")
@@ -122,7 +130,9 @@ func (rediss *RedisInstanceClass) Del(key interface{}) bool {
 
 // hset插入数据
 func (rediss *RedisInstanceClass) HSet(key string, field, val interface{}) bool {
-	_, err := rediss.redisConnInstance.Get().Do("HSET", key, field, val)
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	_, err := connect.Get().Do("HSET", key, field, val)
 	if err != nil {
 		log.InitLog("redis").Errorf("HSET", "msg", err)
 		fmt.Println("redis hset error")
@@ -133,7 +143,9 @@ func (rediss *RedisInstanceClass) HSet(key string, field, val interface{}) bool 
 
 // hmset插入数据
 func (rediss *RedisInstanceClass) HMSet(key string, val interface{}) bool {
-	_, err := rediss.redisConnInstance.Get().Do("HMSET", redis.Args{}.Add(key).AddFlat(val)...)
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	_, err := connect.Get().Do("HMSET", redis.Args{}.Add(key).AddFlat(val)...)
 	if err != nil {
 		log.InitLog("redis").Errorf("HMSET", "msg", err)
 		fmt.Println("redis hmset error")
@@ -144,7 +156,9 @@ func (rediss *RedisInstanceClass) HMSet(key string, val interface{}) bool {
 
 // hget获取数据
 func (rediss *RedisInstanceClass) HGet(key, field string) interface{} {
-	ret, err := redis.String(rediss.redisConnInstance.Get().Do("HGET", key, field))
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	ret, err := redis.String(connect.Get().Do("HGET", key, field))
 	if err != nil {
 		log.InitLog("redis").Errorf("HGET", "msg", err)
 		fmt.Println("redis hget error")
@@ -154,10 +168,60 @@ func (rediss *RedisInstanceClass) HGet(key, field string) interface{} {
 
 // hmgetall获取数据
 func (rediss *RedisInstanceClass) HMGetAll(key string) interface{} {
-	ret, err := redis.StringMap(rediss.redisConnInstance.Get().Do("HGETALL", key))
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	ret, err := redis.StringMap(connect.Get().Do("HGETALL", key))
 	if err != nil {
 		log.InitLog("redis").Errorf("HMGET", "msg", err)
 		fmt.Println("redis hmget error")
+	}
+	return ret
+}
+
+// zadd插入数据
+func (rediss *RedisInstanceClass) ZAdd(key string, score int, member string) bool {
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	if _, err := connect.Get().Do("ZADD", key, score, member); err != nil {
+		log.InitLog("redis").Errorf("ZADD", "msg", err)
+		fmt.Println("redis zadd error：" + err.Error())
+		return false
+	}
+	return true
+}
+
+// zadd删除数据
+func (rediss *RedisInstanceClass) ZRem(key string, member string) bool {
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	if _, err := connect.Get().Do("ZREM", key, member); err != nil {
+		log.InitLog("redis").Errorf("ZREM", "msg", err)
+		fmt.Println("redis zrem error：" + err.Error())
+		return false
+	}
+	return true
+}
+
+// zadd获取指点范围正序
+func (rediss *RedisInstanceClass) ZRange(key string, start int, stop int) interface{} {
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	ret, err := redis.Strings(connect.Get().Do("ZRANGE", key, start, stop))
+	if err != nil {
+		log.InitLog("redis").Errorf("ZRANGE", "msg", err)
+		fmt.Println("redis zrange error：" + err.Error())
+	}
+	return ret
+}
+
+// zadd获取指点范围倒序
+func (rediss *RedisInstanceClass) ZRevrange(key string, start int, stop int) interface{} {
+	connect := *rediss.redisConnInstance
+	defer connect.Close()
+	ret, err := redis.Strings(connect.Get().Do("ZREVRANGE", key, start, stop))
+	if err != nil {
+		log.InitLog("redis").Errorf("ZREVRANGE", "msg", err)
+		fmt.Println("redis zrevrange error：" + err.Error())
 	}
 	return ret
 }
