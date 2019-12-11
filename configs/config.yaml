@@ -35,29 +35,36 @@ mysql:
 
 redis:
   default:
-    -
-      addr: "10.0.4.31:6379"
-      pwd: "123456"
-      instance: "master"
-      max_idle: 32
-      max_active: 512
-    -
-      addr: "10.0.4.31:6379"
-      pwd: "123456"
-      instance: "slave"
-      max_idle: 32
-      max_active: 512
+    master:
+      -
+        addr: "10.0.4.31:6379"
+        pwd: "123456"
+        max_idle: 32
+        max_active: 512
+    slave:
+      -
+        addr: "10.0.4.31:6379"
+        pwd: "123456"
+        max_idle: 32
+        max_active: 512
   session:
-    - addr: "10.0.4.31:6379"
-      pwd: "123456"
-      instance: "master"
-      max_idle: 32
-      max_active: 512
-    - addr: "10.0.4.31:6379"
-      pwd: "123456"
-      instance: "slave"
-      max_idle: 32
-      max_active: 512
+    master:
+      -
+        addr: "10.0.4.31:6379"
+        pwd: "123456"
+        max_idle: 32
+        max_active: 512
+    slave:
+      -
+        addr: "10.0.4.31:6379"
+        pwd: "123456"
+        max_idle: 32
+        max_active: 512
+      -
+        addr: "10.0.4.31:6379"
+        pwd: "123456"
+        max_idle: 32
+        max_active: 512
 
 mongodb:
   mygin:

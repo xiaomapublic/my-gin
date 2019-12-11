@@ -264,7 +264,7 @@ func (*Api) RedisCreate(c *gin.Context) {
 	// 定义redis实例类
 	var redisClass redisLib.RedisInstanceClass
 	// 根据配置获取某个具体redis实例
-	redisClass.GetRedigoByName("default", "master")
+	redisClass.GetRedigoByName("default")
 	// string
 	redisClass.Set("set", data.Ad_id)
 	redisClass.SetEx("setex", data.Hour, 100)
@@ -288,7 +288,7 @@ func (*Api) RedisUpdate(c *gin.Context) {
 	}
 
 	var redisClass redisLib.RedisInstanceClass
-	redisClass.GetRedigoByName("default", "master")
+	redisClass.GetRedigoByName("default")
 	// string
 	redisClass.Set("set", data.Ad_id)
 	redisClass.SetEx("setex", data.Hour, 100)
@@ -317,7 +317,7 @@ func (*Api) RedisDelete(c *gin.Context) {
 	}
 
 	var redisClass redisLib.RedisInstanceClass
-	redisClass.GetRedigoByName("default", "master")
+	redisClass.GetRedigoByName("default")
 	redisClass.Del("hash_" + data.Ad_id)
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
@@ -332,7 +332,7 @@ func (*Api) RedisGetWhere(c *gin.Context) {
 	ad_id, _ := c.GetQuery("ad_id")
 
 	var redisClass redisLib.RedisInstanceClass
-	redisClass.GetRedigoByName("default", "slave")
+	redisClass.GetRedigoByName("default")
 	// string
 	dataString := redisClass.Get("set")
 	// hash
@@ -725,7 +725,7 @@ func (*Api) RedisZSet(c *gin.Context) {
 	sort, _ := strconv.Atoi(score)
 
 	var redisClass redisLib.RedisInstanceClass
-	redisClass.GetRedigoByName("default", "master")
+	redisClass.GetRedigoByName("default")
 	result := redisClass.ZAdd(key, sort, member)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -743,7 +743,7 @@ func (*Api) RedisZRem(c *gin.Context) {
 	member, _ := c.GetQuery("member")
 
 	var redisClass redisLib.RedisInstanceClass
-	redisClass.GetRedigoByName("default", "master")
+	redisClass.GetRedigoByName("default")
 	result := redisClass.ZRem(key, member)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -763,13 +763,10 @@ func (*Api) RedisZRange(c *gin.Context) {
 
 	s, _ := strconv.Atoi(start)
 	e, _ := strconv.Atoi(end)
-	fmt.Println("返回1")
 	var redisClass redisLib.RedisInstanceClass
-	redisClass.GetRedigoByName("default", "slave")
+	redisClass.GetRedigoByName("default")
 	resultAsc := redisClass.ZRange(key, s, e)
 	resultDesc := redisClass.ZRevrange(key, s, e)
-	fmt.Printf("%p\n", redisClass)
-	fmt.Printf("%p\n", redisClass)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,

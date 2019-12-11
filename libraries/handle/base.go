@@ -1,6 +1,7 @@
 package handle
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"my-gin/libraries/log"
@@ -11,7 +12,6 @@ func HandleErrors() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
-
 				//初始化日志文件
 				logger := log.InitLog("error")
 				logger.Errorf("error", err)
@@ -36,7 +36,7 @@ func HandleErrors() gin.HandlerFunc {
 				} else {
 					c.JSON(http.StatusInternalServerError, gin.H{
 						"code": 500,
-						"msg":  "system error",
+						"msg":  fmt.Sprintf("system error %s", err),
 					})
 					return
 				}

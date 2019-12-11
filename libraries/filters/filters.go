@@ -10,7 +10,7 @@ import (
 )
 
 func RegisterSession() gin.HandlerFunc {
-	sessionConfig := config.UnmarshalConfig.Redis["session"][0]
+	sessionConfig := config.UnmarshalConfig.Redis["session"]["master"][0]
 	store, _ := sessions.NewRedisStore(
 		10,
 		"tcp",
@@ -21,7 +21,7 @@ func RegisterSession() gin.HandlerFunc {
 }
 
 func RegisterCache() gin.HandlerFunc {
-	sessionConfig := config.UnmarshalConfig.Redis["session"][0]
+	sessionConfig := config.UnmarshalConfig.Redis["session"]["master"][0]
 	var cacheStore persistence.CacheStore
 	cacheStore = persistence.NewRedisCache(sessionConfig.Addr, sessionConfig.Pwd, time.Minute)
 	return cache.Cache(&cacheStore)

@@ -72,7 +72,6 @@ type Mysql struct {
 type Redis struct {
 	Addr       string
 	Pwd        string
-	Instance   string
 	Max_idle   int
 	Max_active int
 }
@@ -106,7 +105,7 @@ type YamlSetting struct {
 	Log         Log
 	Excel       string
 	Mysql       map[string]Mysql
-	Redis       map[string][]Redis
+	Redis       map[string]map[string][]Redis
 	Mongodb     map[string]Mongodb
 	Rabbitmq    map[string]Rabbitmq
 	Elastic     Elastic
