@@ -1,0 +1,29 @@
+syntax = "proto3";
+package test;
+
+service TestApi {
+    rpc redisZSet (SetReq) returns (SetResp);
+    rpc redisZRange (RangeReq) returns (RangeResp);
+}
+
+message SetReq {
+	string key = 1;
+	int64 score = 2;
+	string member = 3;
+}
+
+message RangeReq {
+	string key = 1;
+	int64 start = 2;
+	int64 end = 3;
+}
+
+message SetResp {
+ 		bool data = 3;
+}
+
+message RangeResp {
+ 		repeated string data = 3;
+}
+
+

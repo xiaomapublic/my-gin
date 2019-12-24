@@ -2,8 +2,16 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io/ioutil"
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"runtime"
+	"time"
+
 	_ "my-gin/app/cronjobs"
 	_ "my-gin/app/services/defaultExecution"
 	"my-gin/libraries/config"
@@ -12,19 +20,17 @@ import (
 	_ "my-gin/libraries/mysql"
 	_ "my-gin/libraries/redis"
 	routerBase "my-gin/libraries/router"
-	"net/http"
-	"os"
-	"os/signal"
-	"runtime"
-	"time"
 
-	"flag"
+	"my-gin/app/controllers/test"
+
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
 )
 
 var (
-	port = flag.String("port", config.UnmarshalConfig.Server_port, "http port")
-	mode = flag.String("mode", config.UnmarshalConfig.Mode, "app mod")
+	port     = flag.String("port", config.UnmarshalConfig.Server_port, "http port")
+	grpcPort = flag.String("grpc-port", config.UnmarshalConfig.Grpc_port, "grpc port")
+	mode     = flag.String("mode", config.UnmarshalConfig.Mode, "app mod")
 )
 
 // 应用主函数入口
@@ -41,6 +47,17 @@ func main() {
 	logger.Info("cup核数：", runtime.NumCPU())
 	// 获取gin初始化实例
 	router := routerBase.InitRouter()
+
+	// grpc监听
+	go func() {
+		lis, _ := net.Listen("tcp", ":"+*grpcPort)
+		grpcServer := grpc.NewServer()
+		grpcApiServer := new(test.GrpcApiServer)
+		test.RegisterTestApiServer(grpcServer, grpcApiServer)
+		if err := grpcServer.Serve(lis); err != nil {
+			logger.Error("listen-grpc: ", err.Error())
+		}
+	}()
 
 	// gin默认监听端口方式
 	// if err := router.Run(UnmarshalConfig.Server_port); err != nil {

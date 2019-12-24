@@ -5,17 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/jianfengye/collection"
-	elastic2 "github.com/olivere/elastic/v7"
-	"github.com/streadway/amqp"
-	"github.com/syyongx/php2go"
-	"github.com/uniplaces/carbon"
-	"gopkg.in/mgo.v2/bson"
 	"math/rand"
+	"net/http"
+	"runtime"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	mongodbMod "my-gin/app/models/mongodb"
 	mysqlMod "my-gin/app/models/mysql"
 	"my-gin/app/services/test"
+	"my-gin/libraries/config"
 	"my-gin/libraries/elastic"
 	"my-gin/libraries/filters/auth"
 	"my-gin/libraries/mongodb"
@@ -23,12 +24,15 @@ import (
 	"my-gin/libraries/rabbitmq"
 	redisLib "my-gin/libraries/redis"
 	"my-gin/libraries/util"
-	"net/http"
-	"runtime"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jianfengye/collection"
+	elastic2 "github.com/olivere/elastic/v7"
+	"github.com/streadway/amqp"
+	"github.com/syyongx/php2go"
+	"github.com/uniplaces/carbon"
+	"google.golang.org/grpc"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type Api struct {
@@ -926,4 +930,102 @@ func (*Api) ElasticDelete(c *gin.Context) {
 		fmt.Printf("delete result %s\n", res.Result)
 	}
 
+}
+
+// GRPC
+type GrpcApiServer struct {
+}
+
+// grpc服务端：redis zset 设置
+func (s *GrpcApiServer) RedisZSet(ctx context.Context, req *SetReq) (resp *SetResp, err error) {
+	key := req.Key
+	score := req.Score
+	member := req.Member
+	scoreStr := strconv.FormatInt(score, 10)
+	scoreInt, _ := strconv.Atoi(scoreStr)
+
+	var redisClass redisLib.RedisInstanceClass
+	redisClass.GetRedigoByName("default")
+
+	b := new(SetResp)
+	b.Data = redisClass.ZAdd(key, scoreInt, member)
+	return b, nil
+}
+
+// grpc服务端：redis zset 获取
+func (s *GrpcApiServer) RedisZRange(ctx context.Context, req *RangeReq) (resp *RangeResp, err error) {
+	key := req.Key
+	start := req.Start
+	end := req.End
+
+	startStr := strconv.FormatInt(start, 10)
+	startInt, _ := strconv.Atoi(startStr)
+
+	endStr := strconv.FormatInt(end, 10)
+	endInt, _ := strconv.Atoi(endStr)
+
+	var redisClass redisLib.RedisInstanceClass
+	redisClass.GetRedigoByName("default")
+	resultAsc := redisClass.ZRange(key, startInt, endInt)
+	b := new(RangeResp)
+	b.Data = resultAsc
+	return b, nil
+}
+
+// grpc客户端：redis zset 设置
+func (*Api) GrpcRedisZRange(c *gin.Context) {
+	key, _ := c.GetQuery("key")
+	start, _ := c.GetQuery("start")
+	end, _ := c.GetQuery("end")
+
+	conn, err := grpc.Dial("127.0.0.1:"+config.ParseYaml().Grpc_port, grpc.WithInsecure())
+	if err != nil {
+		panic(fmt.Sprintf("fail to dial: %v", err))
+	}
+	defer conn.Close()
+
+	apiClient := NewTestApiClient(conn)
+
+	data := new(RangeReq)
+
+	data.Key = key
+	data.Start, _ = strconv.ParseInt(start, 10, 64)
+	data.End, _ = strconv.ParseInt(end, 10, 64)
+
+	bi, _ := apiClient.RedisZRange(context.Background(), data)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  "",
+		"data": bi.Data,
+	})
+}
+
+// grpc客户端：redis zset 获取
+func (*Api) GrpcRedisZSet(c *gin.Context) {
+	key, _ := c.GetQuery("key")
+	score, _ := c.GetQuery("score")
+	member, _ := c.GetQuery("member")
+
+	conn, err := grpc.Dial("127.0.0.1:"+config.ParseYaml().Grpc_port, grpc.WithInsecure())
+	if err != nil {
+		panic(fmt.Sprintf("fail to dial: %v", err))
+	}
+	defer conn.Close()
+
+	apiClient := NewTestApiClient(conn)
+
+	data := new(SetReq)
+
+	data.Key = key
+	data.Score, _ = strconv.ParseInt(score, 10, 64)
+	data.Member = member
+
+	bi, _ := apiClient.RedisZSet(context.Background(), data)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  "",
+		"data": bi.Data,
+	})
 }

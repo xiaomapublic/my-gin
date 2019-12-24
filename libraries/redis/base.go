@@ -189,7 +189,7 @@ func (rediss *RedisInstanceClass) HMSet(key string, val interface{}) bool {
 }
 
 // hget获取数据
-func (rediss *RedisInstanceClass) HGet(key, field string) interface{} {
+func (rediss *RedisInstanceClass) HGet(key, field string) string {
 	pool := rediss.GetSlavePool()
 	defer pool.Close()
 	ret, err := redis.String(pool.Do("HGET", key, field))
@@ -201,7 +201,7 @@ func (rediss *RedisInstanceClass) HGet(key, field string) interface{} {
 }
 
 // hmgetall获取数据
-func (rediss *RedisInstanceClass) HMGetAll(key string) interface{} {
+func (rediss *RedisInstanceClass) HMGetAll(key string) map[string]string {
 	pool := rediss.GetSlavePool()
 	defer pool.Close()
 	ret, err := redis.StringMap(pool.Do("HGETALL", key))
@@ -237,7 +237,7 @@ func (rediss *RedisInstanceClass) ZRem(key string, member string) bool {
 }
 
 // zadd获取指点范围正序
-func (rediss *RedisInstanceClass) ZRange(key string, start int, stop int) interface{} {
+func (rediss *RedisInstanceClass) ZRange(key string, start int, stop int) []string {
 	pool := rediss.GetSlavePool()
 	defer pool.Close()
 	ret, err := redis.Strings(pool.Do("ZRANGE", key, start, stop))
@@ -249,7 +249,7 @@ func (rediss *RedisInstanceClass) ZRange(key string, start int, stop int) interf
 }
 
 // zadd获取指点范围倒序
-func (rediss *RedisInstanceClass) ZRevrange(key string, start int, stop int) interface{} {
+func (rediss *RedisInstanceClass) ZRevrange(key string, start int, stop int) []string {
 	pool := rediss.GetSlavePool()
 	defer pool.Close()
 	ret, err := redis.Strings(pool.Do("ZREVRANGE", key, start, stop))

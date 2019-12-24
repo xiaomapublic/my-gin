@@ -97,6 +97,7 @@ type Elastic struct {
 type YamlSetting struct {
 	Mode        string
 	Server_port string
+	Grpc_port   string
 	App_name    string
 	Template    string
 	App_secret  string

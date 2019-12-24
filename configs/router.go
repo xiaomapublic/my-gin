@@ -49,6 +49,8 @@ func RegisterApiRouter(router *gin.Engine) {
 			testApiRouter.GET("/Api/RedisZSet", testApi.RedisZSet)
 			testApiRouter.GET("/Api/RedisZRem", testApi.RedisZRem)
 			testApiRouter.GET("/Api/RedisZRange", testApi.RedisZRange)
+			testApiRouter.GET("/Api/GrpcRedisZRange", testApi.GrpcRedisZRange)
+			testApiRouter.GET("/Api/GrpcRedisZSet", testApi.GrpcRedisZSet)
 		}
 
 	}

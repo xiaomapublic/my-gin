@@ -16,6 +16,8 @@ require (
 	github.com/gin-gonic/contrib v0.0.0-20190526021735-7fb7810ed2a0
 	github.com/gin-gonic/gin v1.4.0
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/golang/protobuf v1.3.2
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/sessions v1.2.0
 	github.com/jianfengye/collection v0.0.0-20191010064941-07ffabdee0ff
@@ -31,6 +33,7 @@ require (
 	github.com/syyongx/php2go v0.9.4
 	github.com/uniplaces/carbon v0.1.6
 	go.uber.org/zap v1.10.0
+	google.golang.org/grpc v1.21.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
