@@ -22,6 +22,7 @@ require (
 	github.com/gorilla/sessions v1.2.0
 	github.com/jianfengye/collection v0.0.0-20191010064941-07ffabdee0ff
 	github.com/jinzhu/gorm v1.9.10
+	github.com/json-iterator/go v1.1.9
 	github.com/mattn/go-sqlite3 v2.0.0+incompatible // indirect
 	github.com/olivere/elastic/v7 v7.0.9
 	github.com/robfig/cron v1.2.0

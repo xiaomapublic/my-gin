@@ -3,8 +3,8 @@ package test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -27,6 +27,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jianfengye/collection"
+	"github.com/json-iterator/go"
 	elastic2 "github.com/olivere/elastic/v7"
 	"github.com/streadway/amqp"
 	"github.com/syyongx/php2go"
@@ -232,7 +233,8 @@ func (*Api) MysqlGetWhere(c *gin.Context) {
 
 	rabbitmq.FailOnError(err, "Failed to declare a queue")
 
-	body, _ := json.Marshal(data)
+	jsonIter := jsoniter.ConfigCompatibleWithStandardLibrary
+	body, _ := jsonIter.Marshal(data)
 
 	// 发布
 	err = ch.Publish(
@@ -845,6 +847,7 @@ func (*Api) ElasticSearch(c *gin.Context) {
 		Sort("ad_id.keyword", false). // 字符串排序加keyword
 		From(offset).Size(limit).     // 分页
 		Pretty(true).                 // pretty print request and response JSON
+		TimeoutInMillis(2000).        // 限定搜索时间，响应只包含指定时间内的匹配
 		Do(ctx)                       // 执行
 
 	if err != nil {
@@ -868,7 +871,6 @@ func (*Api) ElasticSearch(c *gin.Context) {
 	}
 
 	total := searchResult.Hits.TotalHits.Value
-
 	c.JSON(http.StatusOK, gin.H{
 		"code":  0,
 		"msg":   "",
@@ -879,13 +881,108 @@ func (*Api) ElasticSearch(c *gin.Context) {
 
 }
 
+/**
+ * es操作,search-group by
+ */
+func (*Api) ElasticSearchGroupBy(c *gin.Context) {
+	stimeQuery := c.DefaultQuery("stime", carbon.Now().DateString())
+	etimeQuery := c.DefaultQuery("etime", carbon.Now().DateString())
+	stime, _ := carbon.Parse(carbon.DefaultFormat, stimeQuery, "Asia/Shanghai")
+	etime, _ := carbon.Parse(carbon.DefaultFormat, etimeQuery, "Asia/Shanghai")
+	shour := stime.Local()
+	ehour := etime.Local()
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "15"))
+
+	fmt.Println(shour, ehour)
+
+	var (
+		ctx           = context.Background()
+		testIndexName = "my_gin"
+		item          []interface{}
+		totalItem     int
+		terms         = "ad_id"
+		totalTerms    = "total"
+		jsonIter      = jsoniter.ConfigCompatibleWithStandardLibrary
+	)
+
+	esClient := elastic.Init()
+	termQuery := elastic2.NewRangeQuery("hour").Gte(shour).Lte(ehour)
+
+	request_count := elastic2.NewSumAggregation().Field("request_count")
+	cpm_count := elastic2.NewSumAggregation().Field("cpm_count")
+	cpc_original_count := elastic2.NewSumAggregation().Field("cpc_original_count")
+	aggs := elastic2.NewTermsAggregation().
+		Field("ad_id.keyword").
+		Size(limit*page).
+		OrderByKeyAsc().
+		SubAggregation("request_count", request_count).
+		SubAggregation("cpm_count", cpm_count).
+		SubAggregation("cpc_original_count", cpc_original_count)
+
+	// h := elastic2.New
+	searchResult, err := esClient.Search().
+		Index(testIndexName). // 搜索的索引名称
+		Size(0).
+		Query(termQuery). // 条件
+		Aggregation(terms, aggs).
+		Pretty(true). // pretty print request and response JSON
+		Do(ctx)       // 执行
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	agg, found := searchResult.Aggregations.Terms(terms)
+
+	if !found {
+		fmt.Printf("we should have a terms aggregation called %q", terms)
+	}
+
+	if err = jsonIter.Unmarshal(agg.Aggregations["buckets"], &item); err != nil {
+		fmt.Printf("json unmarshal err : %s\n", err.Error())
+	}
+
+	totalAggs := elastic2.NewCardinalityAggregation().Field("ad_id.keyword")
+	totalResult, err := esClient.Search().Index(testIndexName).Query(termQuery).Aggregation(totalTerms, totalAggs).Pretty(true).Do(ctx)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	total, found := totalResult.Aggregations.Terms(totalTerms)
+	if !found {
+		fmt.Printf("we should have a terms aggregation called %q", totalTerms)
+	}
+
+	if err = jsonIter.Unmarshal(total.Aggregations["value"], &totalItem); err != nil {
+		fmt.Printf("json unmarshal err : %s\n", err.Error())
+	}
+
+	var pageMax float64
+
+	pageMax = math.Ceil(float64(totalItem) / float64(limit))
+
+	if page > int(pageMax) {
+		page = int(pageMax)
+	}
+	pageLimit := (page - 1) * limit
+	c.JSON(http.StatusOK, gin.H{
+		"code":  0,
+		"msg":   "",
+		"total": totalItem,
+		"data":  item[pageLimit:],
+	})
+
+}
+
 /*
  * es操作，delete
  */
 func (*Api) ElasticDelete(c *gin.Context) {
 	var (
 		ctx           = context.Background()
-		testIndexName = "mongo"
+		testIndexName = "my_gin"
 		item          []mongodbMod.MyGinData
 	)
 
@@ -914,7 +1011,8 @@ func (*Api) ElasticDelete(c *gin.Context) {
 			fmt.Printf("expected SearchResult.Hits.Hit.Index = %q; got %q\n", testIndexName, hit.Index)
 		}
 		var data mongodbMod.MyGinData
-		json.Unmarshal(hit.Source, &data)
+		jsonIter := jsoniter.ConfigCompatibleWithStandardLibrary
+		jsonIter.Unmarshal(hit.Source, &data)
 		item = append(item, data)
 	}
 
