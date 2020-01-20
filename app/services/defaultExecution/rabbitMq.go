@@ -82,6 +82,7 @@ func MonitorAdHourMq() {
 			if err == nil {
 				d.Ack(true)
 			} else {
+				d.Ack(false)
 				logger.Errorf("msg", err)
 			}
 

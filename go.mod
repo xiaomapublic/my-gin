@@ -27,6 +27,7 @@ require (
 	github.com/olivere/elastic/v7 v7.0.9
 	github.com/robfig/cron v1.2.0
 	github.com/rs/xid v1.2.1
+	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24
 	github.com/spf13/viper v1.4.0
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
 	github.com/swaggo/gin-swagger v1.2.0

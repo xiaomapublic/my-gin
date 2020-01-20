@@ -21,6 +21,8 @@ func RegisterApiRouter(router *gin.Engine) {
 
 		testApiRouter.POST("/jwt/set", testApi.JwtSetLogin)
 
+		testApiRouter.GET("/Api/Test", testApi.Test)
+
 		testApiRouter.Use(auth.Middleware("jwt"))
 		{
 

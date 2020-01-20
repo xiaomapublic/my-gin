@@ -16,6 +16,7 @@ import (
 	mongodbMod "my-gin/app/models/mongodb"
 	mysqlMod "my-gin/app/models/mysql"
 	"my-gin/app/services/test"
+	"my-gin/libraries/collect"
 	"my-gin/libraries/config"
 	"my-gin/libraries/elastic"
 	"my-gin/libraries/filters/auth"
@@ -29,6 +30,7 @@ import (
 	"github.com/jianfengye/collection"
 	"github.com/json-iterator/go"
 	elastic2 "github.com/olivere/elastic/v7"
+	"github.com/shopspring/decimal"
 	"github.com/streadway/amqp"
 	"github.com/syyongx/php2go"
 	"github.com/uniplaces/carbon"
@@ -37,6 +39,57 @@ import (
 )
 
 type Api struct {
+}
+
+// 通用测试接口
+func (a *Api) Test(c *gin.Context) {
+	// 科学计数法转还原
+	numStr := "1.31623936e8"
+	decimalNum, _ := decimal.NewFromString(numStr)
+	fmt.Println(decimalNum.String())
+
+	t1 := time.Now()
+	// 自建laravel collect groupBy方法
+	var data []mysqlMod.MyGin
+	mysqlMod.MyGinObj().Where("hour >= ? AND hour <= ?", "2019-07-01 00:00:00", "2019-07-01 02:00:00").Find(&data)
+
+	type sum struct {
+		request_count      int
+		cpm_count          int
+		cpc_original_count int
+	}
+	t2 := time.Now()
+	fmt.Println("数据查询时间：", t2.Sub(t1), runtime.NumGoroutine())
+
+	collectObj := collect.NewObjCollect(data)
+
+	// collectData := collectObj.GroupBy("Campaign_id", "Advertiser_id").Sum("Request_count", "Cpm_count", "Cpc_original_count")
+	collectData := collectObj.GroupBy("Campaign_id", "Advertiser_id")
+	collectData.DD()
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  "分组成功",
+		"data": "collectData",
+	})
+
+	result := make(map[string]map[string]int)
+	for _, val := range data {
+		key := val.Hour.Format("2006-01-02") + "|" + val.Campaign_id
+		if _, ok := result[key]; ok {
+			result[key]["request_count"] += val.Request_count
+			result[key]["cpm_count"] += val.Cpm_count
+			result[key]["cpc_original_count"] += val.Cpc_original_count
+		} else {
+			result[key] = map[string]int{
+				"request_count":      val.Request_count,
+				"cpm_count":          val.Cpm_count,
+				"cpc_original_count": val.Cpc_original_count,
+			}
+		}
+	}
+	t3 := time.Now()
+	fmt.Println("数据汇总时间：", t3.Sub(t2), runtime.NumGoroutine())
+	fmt.Println(result)
 }
 
 // mysql写入数据
