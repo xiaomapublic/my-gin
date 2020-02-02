@@ -92,44 +92,14 @@ func (arr *ObjCollect) GroupBy(keys ...string) ICollect {
 	}
 
 	newArr.MasterCollect.Parent = newArr
-	fmt.Println(newArr.objs.Interface())
 	return newArr
 }
 
 // 需要修改成与groupby类似使反射的方式
-func (arr *ObjCollect) Sum(keys ...string) ICollect {
-	if arr.Err() != nil {
-		return arr
+func (arr *ObjCollect) Sum(k string) (sum int64) {
+
+	for i := 0; i < arr.objs.Len(); i++ {
+		sum += arr.objs.Index(i).FieldByName(k).Int()
 	}
-	rowMap := make(map[string]map[string]int64)
-
-	iter := arr.objs.MapRange()
-	for iter.Next() {
-
-		rowMapZ := make(map[string]int64)
-		for _, key := range keys {
-			rowMapZ[key] = 0
-		}
-
-		for i := 0; i < iter.Value().Len(); i++ {
-			for k, _ := range rowMapZ {
-				rowMapZ[k] += iter.Value().Index(i).FieldByName(k).Int()
-			}
-		}
-		rowMap[iter.Key().String()] = rowMapZ
-	}
-
-	vals := reflect.ValueOf(rowMap)
-	typ := reflect.TypeOf(rowMap).Elem()
-
-	// mapType := reflect.MapOf(reflect.TypeOf(""), arr.typ)
-	// mapObj := reflect.MakeMap(reflect.TypeOf(rowMap))
-	// eleTyp := mapObj.Type().Elem()
-	newArr := &ObjCollect{
-		objs: vals,
-		typ:  typ,
-	}
-	newArr.MasterCollect.Parent = newArr
-	fmt.Println(newArr.objs.Interface())
-	return newArr
+	return
 }

@@ -19,5 +19,5 @@ type ICollect interface {
 	// 打印出当前map结构
 	DD()
 	// 获取sum值
-	Sum(...string) ICollect
+	Sum(string) int64
 }

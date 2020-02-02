@@ -63,7 +63,7 @@ func (a *Api) Test(c *gin.Context) {
 
 	collectObj := collect.NewObjCollect(data)
 
-	// collectData := collectObj.GroupBy("Campaign_id", "Advertiser_id").Sum("Request_count", "Cpm_count", "Cpc_original_count")
+	// collectData := collectObj.GroupBy("Campaign_id", "Advertiser_id").Sum("Request_count")
 	collectData := collectObj.GroupBy("Campaign_id", "Advertiser_id")
 	collectData.DD()
 	c.JSON(http.StatusOK, gin.H{
