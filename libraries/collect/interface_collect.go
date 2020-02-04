@@ -20,4 +20,6 @@ type ICollect interface {
 	DD()
 	// 获取sum值
 	Sum(string) int64
+	// 还原为接口类型
+	GetInterface() interface{}
 }

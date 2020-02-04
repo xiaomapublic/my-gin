@@ -61,20 +61,22 @@ func (a *Api) Test(c *gin.Context) {
 	t2 := time.Now()
 	fmt.Println("数据查询时间：", t2.Sub(t1), runtime.NumGoroutine())
 
-	collectObj := collect.NewObjCollect(data)
-
-	// collectData := collectObj.GroupBy("Campaign_id", "Advertiser_id").Sum("Request_count")
-	collectData := collectObj.GroupBy("Campaign_id", "Advertiser_id")
-	collectData.DD()
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"msg":  "分组成功",
-		"data": "collectData",
-	})
+	collectInterface := collect.NewObjCollect(data).GroupBy("Campaign_id", "Advertiser_id").GetInterface()
+	collectData := collectInterface.(map[string][]mysqlMod.MyGin)
+	resultCollect := make(map[string]map[string]int64)
+	for key, val := range collectData {
+		sum := make(map[string]int64)
+		sum["request_count"] = collect.NewObjCollect(val).Sum("Request_count")
+		sum["cpm_count"] = collect.NewObjCollect(val).Sum("Cpm_count")
+		sum["cpc_original_count"] = collect.NewObjCollect(val).Sum("Cpc_original_count")
+		resultCollect[key] = sum
+	}
+	t3 := time.Now()
+	fmt.Println("使用反射数据汇总时间：", t3.Sub(t2), runtime.NumGoroutine())
 
 	result := make(map[string]map[string]int)
 	for _, val := range data {
-		key := val.Hour.Format("2006-01-02") + "|" + val.Campaign_id
+		key := val.Campaign_id + "|" + strconv.Itoa(val.Advertiser_id)
 		if _, ok := result[key]; ok {
 			result[key]["request_count"] += val.Request_count
 			result[key]["cpm_count"] += val.Cpm_count
@@ -87,9 +89,14 @@ func (a *Api) Test(c *gin.Context) {
 			}
 		}
 	}
-	t3 := time.Now()
-	fmt.Println("数据汇总时间：", t3.Sub(t2), runtime.NumGoroutine())
-	fmt.Println(result)
+	t4 := time.Now()
+	fmt.Println("使用普通方式数据汇总时间：", t4.Sub(t3), runtime.NumGoroutine())
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  "分组求和成功",
+		"result": result,
+		"resultCollect": resultCollect,
+	})
 }
 
 // mysql写入数据

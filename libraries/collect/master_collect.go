@@ -26,6 +26,10 @@ func (arr *MasterCollect) Copy() ICollect {
 	return arr.Parent.Copy().SetCompare(arr.compare)
 }
 
+func (arr *MasterCollect) GetInterface() interface{} {
+	return arr.Parent.GetInterface()
+}
+
 func (arr *MasterCollect) SetCompare(compare func(a interface{}, b interface{}) int) ICollect {
 	arr.compare = compare
 	return arr

@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -10,6 +11,18 @@ type ObjCollect struct {
 	MasterCollect
 	objs reflect.Value
 	typ  reflect.Type
+}
+
+func NewObjCollect(objs interface{}) *ObjCollect {
+	vals := reflect.ValueOf(objs)
+	typ := reflect.TypeOf(objs).Elem()
+
+	arr := &ObjCollect{
+		objs: vals,
+		typ:  typ,
+	}
+	arr.MasterCollect.Parent = arr
+	return arr
 }
 
 func (arr *ObjCollect) DD() {
@@ -24,16 +37,8 @@ func (arr *ObjCollect) DD() {
 	fmt.Print(ret)
 }
 
-func NewObjCollect(objs interface{}) *ObjCollect {
-	vals := reflect.ValueOf(objs)
-	typ := reflect.TypeOf(objs).Elem()
-
-	arr := &ObjCollect{
-		objs: vals,
-		typ:  typ,
-	}
-	arr.MasterCollect.Parent = arr
-	return arr
+func (arr *ObjCollect) GetInterface() interface{} {
+	return arr.objs.Interface()
 }
 
 func (arr *ObjCollect) NewEmpty(err ...error) ICollect {
@@ -53,9 +58,15 @@ func (arr *ObjCollect) Count() int {
 	return arr.objs.Len()
 }
 
+// 分组
 func (arr *ObjCollect) GroupBy(keys ...string) ICollect {
+
+	if arr.objs.Kind().String() != "slice" {
+		arr.err = errors.New("not slice")
+	}
+
 	if arr.Err() != nil {
-		return arr
+		panic(arr.err)
 	}
 
 	mapType := reflect.MapOf(reflect.TypeOf(""), arr.objs.Type())
@@ -95,7 +106,7 @@ func (arr *ObjCollect) GroupBy(keys ...string) ICollect {
 	return newArr
 }
 
-// 需要修改成与groupby类似使反射的方式
+// 求和
 func (arr *ObjCollect) Sum(k string) (sum int64) {
 
 	for i := 0; i < arr.objs.Len(); i++ {
