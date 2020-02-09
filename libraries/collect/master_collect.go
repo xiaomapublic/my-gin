@@ -26,8 +26,8 @@ func (arr *MasterCollect) Copy() ICollect {
 	return arr.Parent.Copy().SetCompare(arr.compare)
 }
 
-func (arr *MasterCollect) GetInterface() interface{} {
-	return arr.Parent.GetInterface()
+func (arr *MasterCollect) ToInterface() interface{} {
+	return arr.Parent.ToInterface()
 }
 
 func (arr *MasterCollect) SetCompare(compare func(a interface{}, b interface{}) int) ICollect {
@@ -73,4 +73,30 @@ func (arr *MasterCollect) Count() int {
 		panic("no parent")
 	}
 	return arr.Parent.Count()
+}
+
+func (arr *MasterCollect) GroupBy(keys ...string) ICollect {
+
+	if arr.Parent == nil {
+		panic("no parent")
+	}
+	return arr.Parent.GroupBy(keys...)
+}
+
+func (arr *MasterCollect) Sum(k string) int64 {
+	if arr.Err() != nil {
+		return 0
+	}
+	if arr.Parent == nil {
+		panic("no parent")
+	}
+	return arr.Parent.Sum(k)
+}
+
+func (arr *MasterCollect) Unique(k string) ICollect {
+
+	if arr.Parent == nil {
+		panic("no parent")
+	}
+	return arr.Parent.Unique(k)
 }

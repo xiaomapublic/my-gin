@@ -14,12 +14,14 @@ type ICollect interface {
 	Copy() ICollect
 	// 设置比较函数，理论上所有Collection都能设置比较函数，但是强烈不建议基础Collection设置
 	SetCompare(func(a interface{}, b interface{}) int) ICollect
-	// 获取数组长度，对所有Collection生效
+	// 分组
 	GroupBy(...string) ICollect
 	// 打印出当前map结构
 	DD()
 	// 获取sum值
 	Sum(string) int64
 	// 还原为接口类型
-	GetInterface() interface{}
+	ToInterface() interface{}
+	// 去重
+	Unique(string) ICollect
 }

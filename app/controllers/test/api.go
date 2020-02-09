@@ -28,7 +28,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jianfengye/collection"
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	elastic2 "github.com/olivere/elastic/v7"
 	"github.com/shopspring/decimal"
 	"github.com/streadway/amqp"
@@ -61,7 +61,7 @@ func (a *Api) Test(c *gin.Context) {
 	t2 := time.Now()
 	fmt.Println("数据查询时间：", t2.Sub(t1), runtime.NumGoroutine())
 
-	collectInterface := collect.NewObjCollect(data).GroupBy("Campaign_id", "Advertiser_id").GetInterface()
+	collectInterface := collect.NewObjCollect(data).GroupBy("Campaign_id", "Advertiser_id").ToInterface()
 	collectData := collectInterface.(map[string][]mysqlMod.MyGin)
 	resultCollect := make(map[string]map[string]int64)
 	for key, val := range collectData {
@@ -91,11 +91,17 @@ func (a *Api) Test(c *gin.Context) {
 	}
 	t4 := time.Now()
 	fmt.Println("使用普通方式数据汇总时间：", t4.Sub(t3), runtime.NumGoroutine())
+
+	//去重
+	uniqueResult := collect.NewObjCollect(data).Unique("Campaign_id")
+	t5 := time.Now()
+	fmt.Println("去重时间：", t5.Sub(t4), runtime.NumGoroutine())
 	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"msg":  "分组求和成功",
-		"result": result,
+		"code":          0,
+		"msg":           "分组求和成功",
+		"result":        result,
 		"resultCollect": resultCollect,
+		"uniqueResult":  uniqueResult.Count(),
 	})
 }
 

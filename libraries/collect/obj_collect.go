@@ -37,7 +37,7 @@ func (arr *ObjCollect) DD() {
 	fmt.Print(ret)
 }
 
-func (arr *ObjCollect) GetInterface() interface{} {
+func (arr *ObjCollect) ToInterface() interface{} {
 	return arr.objs.Interface()
 }
 
@@ -61,7 +61,7 @@ func (arr *ObjCollect) Count() int {
 // 分组
 func (arr *ObjCollect) GroupBy(keys ...string) ICollect {
 
-	if arr.objs.Kind().String() != "slice" {
+	if arr.objs.Kind() != reflect.Slice {
 		arr.err = errors.New("not slice")
 	}
 
@@ -109,8 +109,50 @@ func (arr *ObjCollect) GroupBy(keys ...string) ICollect {
 // 求和
 func (arr *ObjCollect) Sum(k string) (sum int64) {
 
+	if arr.objs.Kind() != reflect.Slice {
+		arr.err = errors.New("not slice")
+	}
+
 	for i := 0; i < arr.objs.Len(); i++ {
 		sum += arr.objs.Index(i).FieldByName(k).Int()
 	}
 	return
+}
+
+// 去重
+func (arr *ObjCollect) Unique(k string) ICollect {
+
+	if arr.objs.Kind() != reflect.Slice {
+		arr.err = errors.New("not slice")
+	}
+
+	newArr := reflect.MakeSlice(arr.objs.Type(), 0, 0)
+
+	keyArr := reflect.MakeSlice(reflect.SliceOf(arr.objs.Index(0).FieldByName(k).Type()), 0, 0)
+
+	for i := 0; i < arr.objs.Len(); i++ {
+
+		un := false
+		for j := 0; j < keyArr.Len(); j++ {
+			if keyArr.Index(j).Interface() == arr.objs.Index(i).FieldByName(k).Interface() {
+				un = true
+				break
+			}
+		}
+
+		if !un {
+			newArr = reflect.Append(newArr, arr.objs.Index(i))
+			keyArr = reflect.Append(keyArr, arr.objs.Index(i).FieldByName(k))
+		}
+	}
+
+	eleTyp := newArr.Type().Elem()
+	resultArr := &ObjCollect{
+		objs: newArr,
+		typ:  eleTyp,
+	}
+
+	resultArr.MasterCollect.Parent = resultArr
+	return resultArr
+
 }
